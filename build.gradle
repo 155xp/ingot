@@ -29,6 +29,14 @@ dependencies {
 
 	// Fabric API is only needed by the client game tests, never at runtime.
 	gametestImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// -Pingot.test.mainstream=true runs the game tests with the benchmark's mainstream mod set (Sodium, Lithium, ...).
+	if (project.findProperty("ingot.test.mainstream") == "true") {
+		gametestRuntimeOnly fileTree("bench/mods-cache") {
+			include "*.jar"
+			exclude "fabric-api-*.jar"
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -105,6 +113,11 @@ loom {
 				vmArg "-Dingot.enabled=${ingotEnabled}"
 			}
 			vmArg "-Dingot.test.out=${project.file('run/tour').absolutePath}"
+			// -Pingot.validate=true turns on Metal API validation (aborts on misuse; slow).
+			if (project.findProperty("ingot.validate") == "true") {
+				environmentVariable "MTL_DEBUG_LAYER", "1"
+				environmentVariable "MTL_DEBUG_LAYER_ERROR_MODE", "assert"
+			}
 			def testApi = project.findProperty("ingot.test.api")
 			if (testApi != null) {
 				vmArg "-Dingot.test.api=${testApi}"
