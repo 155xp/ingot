@@ -3,7 +3,7 @@
 
 Every `INGOT_EXPORT <ret> <name>(<params>);` declaration becomes a static method on Mtl that invokes a cached
 downcall handle. Pointers (any type containing '*') are passed as Java longs. A declaration preceded by a line
-containing `INGOT_HOT` is linked with Linker.Option.critical(false): it must not block or call back into Java.
+consisting only of `INGOT_HOT` is linked with Linker.Option.critical(false): it must not block or call back into Java.
 
 Run: python3 tools/gen_bindings.py   (the Gradle build also checks the output is current)
 """
@@ -59,10 +59,10 @@ def main():
 
     hot = set()
     for i, line in enumerate(lines):
-        if "INGOT_HOT" in line and "#define" not in line:
-            # The marker applies to the next declaration.
-            for nxt in lines[i:]:
-                m = re.search(r"(ingot_\w+)\s*\(", nxt)
+        if line.strip() == "INGOT_HOT":
+            # A line holding only the marker applies to the next exported declaration.
+            for nxt in lines[i + 1:]:
+                m = re.search(r"INGOT_EXPORT\s+[\w\s\*]+?(ingot_\w+)\s*\(", nxt)
                 if m:
                     hot.add(m.group(1))
                     break

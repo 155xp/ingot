@@ -1,0 +1,18 @@
+{
+	"schemaVersion": 1,
+	"id": "ingot-gametest",
+	"version": "0.0.0",
+	"name": "Ingot client game tests",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": [
+			"dev.ingot.gametest.VisualTourTest"
+		],
+		"preLaunch": [
+			"dev.ingot.gametest.TourPreLaunch"
+		]
+	},
+	"depends": {
+		"fabric-client-gametest-api-v1": "*"
+	}
+}

@@ -416,6 +416,7 @@ public final class MetalDevice implements GpuDeviceBackend {
 			return;
 		}
 		this.encoder.shutdown();
+		MetalPipelineCompiler.releaseLibraries(this);
 		for (long depthStencil : this.depthStencilStates) {
 			if (depthStencil != 0L) {
 				Mtl.release(depthStencil);

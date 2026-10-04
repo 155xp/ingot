@@ -71,7 +71,7 @@ tasks.register("compileNative", Exec) {
 processResources {
 	dependsOn "compileNative"
 	from(nativeOutDir) {
-		include "natives/**"
+		include "natives/**/*.dylib"
 	}
 
 	def version = project.version
@@ -99,6 +99,16 @@ loom {
 		configureEach {
 			// FFM downcalls into libingot need native access; the vanilla launcher passes the same flag.
 			vmArg "--enable-native-access=ALL-UNNAMED"
+			// ./gradlew runClientGameTest -Pingot.enabled=false runs the same tour on the vanilla backend.
+			def ingotEnabled = project.findProperty("ingot.enabled")
+			if (ingotEnabled != null) {
+				vmArg "-Dingot.enabled=${ingotEnabled}"
+			}
+			vmArg "-Dingot.test.out=${project.file('run/tour').absolutePath}"
+			def testApi = project.findProperty("ingot.test.api")
+			if (testApi != null) {
+				vmArg "-Dingot.test.api=${testApi}"
+			}
 		}
 	}
 }
