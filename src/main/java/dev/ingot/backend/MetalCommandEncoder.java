@@ -343,7 +343,11 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		MetalTransientMemory memory = this.transientMemory;
 		long offset = memory.stage(size, BUFFER_STAGING_ALIGNMENT);
 		MetalTransientMemory.copy(data, memory.stagedContents() + offset, size);
-		Mtl.blitCopyBuffer(this.blitEncoder(), memory.stagedHandle(), offset, target.handle(), destination.offset(), size);
+		long blit = this.blitEncoder();
+		Mtl.blitCopyBuffer(blit, memory.stagedHandle(), offset, target.handle(), destination.offset(), size);
+		if (target.managed() && (target.usage() & GpuBuffer.USAGE_MAP_READ) != 0) {
+			Mtl.blitSynchronize(blit, target.handle());
+		}
 		target.lastUseSerial = this.device.currentSerial();
 	}
 

@@ -150,8 +150,10 @@ public final class MetalDevice implements GpuDeviceBackend {
 		DeviceLimits limits = new DeviceLimits(maxAnisotropy, caps.uniformOffsetAlignment(), caps.maxTextureSize(), caps.maxBufferLength(),
 			maxMultiDrawDirectInterleavedDrawCount, Mtl.MAX_COLOR_TARGETS, maxDrawIndirectDrawCount);
 
-		// writeToBufferIsSlow selects the persistently mapped chunk staging ring, ideal for unified memory.
-		boolean writeToBufferIsSlow = true;
+		// writeToBufferIsSlow selects the persistently mapped chunk staging ring, ideal for unified memory. Not on
+		// non-unified devices: there the ring is Managed and stays mapped, so every commit would report (and upload)
+		// all of its mapped bytes again; the CPU staging path uploads only what changed.
+		boolean writeToBufferIsSlow = caps.unifiedMemory();
 		boolean anisotropyHasKnownIssues = false;
 		// The vanilla rule (Util.isAppleSiliconMac): true on every Apple GPU.
 		boolean isExplicitDepthRequired = caps.name().startsWith("Apple");
@@ -315,10 +317,8 @@ public final class MetalDevice implements GpuDeviceBackend {
 		if ((usage & GpuTexture.USAGE_RENDER_ATTACHMENT) != 0) {
 			metalUsage |= MetalFormats.USAGE_RENDER_TARGET;
 		}
-		// Only set when a native view can exist (it costs lossless compression); full-range views reuse the texture.
-		if (cube || mipLevels > 1) {
-			metalUsage |= MetalFormats.USAGE_PIXEL_FORMAT_VIEW;
-		}
+		// No PixelFormatView: views keep the texture's format (mip ranges and cube views do not need it, verified with
+		// API validation), and the flag would cost the texture its lossless compression.
 		long texture = Mtl.textureCreate(this.handle, cube ? MetalFormats.TEXTURE_CUBE : MetalFormats.TEXTURE_2D, pixelFormat, width, height, mipLevels,
 			metalUsage, MetalFormats.STORAGE_PRIVATE, this.cLabel(label));
 		if (texture == 0L) {
