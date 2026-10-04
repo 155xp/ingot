@@ -64,7 +64,9 @@ public final class PowerPolicy {
 		if (framerateLimit < UNLIMITED_FRAMERATE || !batterySaverActive() || Minecraft.getInstance().options.enableVsync().get()) {
 			return framerateLimit;
 		}
-		return displayRefreshRate();
+		int refreshRate = displayRefreshRate();
+		// The limiter divides by the limit; a display that reports no rate keeps the vanilla limit.
+		return refreshRate > 0 ? refreshRate : framerateLimit;
 	}
 
 	private static boolean batterySaverActive() {

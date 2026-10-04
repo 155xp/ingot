@@ -23,8 +23,8 @@ import org.lwjgl.system.MemoryUtil;
  *
  * <p>acquireNextTexture only checks that the window can be presented to. The drawable is taken in blitFromTexture,
  * after all of the frame's CPU work, and the flip-blit plus presentDrawable: are encoded into the frame's command
- * buffer there, because Minecraft calls present() only after submit() has committed it. present() then just hands
- * the drawable back. Nothing in the present path throws: a frame without a drawable is simply not shown.
+ * buffer there, because Minecraft calls present() only after submit() has committed it, so present() has nothing left
+ * to do. Nothing in the present path throws: a frame without a drawable is simply not shown.
  */
 public final class MetalSurface implements GpuSurfaceBackend {
 	private static final Set<GpuSurface.PresentMode> PRESENT_MODES =
@@ -43,7 +43,6 @@ public final class MetalSurface implements GpuSurfaceBackend {
 	private final boolean skipWhenOccluded;
 	private long view;
 	private long surface;
-	private long drawable;
 	/** Serial of the command buffer that carries the most recent presentDrawable:. */
 	private long presentSerial;
 	private boolean suboptimal;
@@ -137,16 +136,16 @@ public final class MetalSurface implements GpuSurfaceBackend {
 		long commandBuffer = ((MetalCommandEncoder) commandEncoder).commandBufferForExternalPass();
 		MetalTextureView view = (MetalTextureView) textureView;
 		Mtl.surfaceBlit(this.surface, commandBuffer, drawable, view.handle(), view.getWidth(0), view.getHeight(0), 1);
-		this.drawable = drawable;
+		// Released once the command buffer that draws and presents it completes. Releasing in present() would tag it
+		// with the next frame's serial (present() runs after submit()), and the layer cannot reuse a drawable the app
+		// still holds, so nextDrawable would block sooner.
 		this.presentSerial = this.device.currentSerial();
+		this.device.releaseLater(drawable);
 	}
 
 	@Override
 	public void present() {
-		if (this.drawable != 0L) {
-			this.device.releaseLater(this.drawable);
-			this.drawable = 0L;
-		}
+		// presentDrawable: was encoded with the blit and committed by submit(); the drawable is already queued for release.
 	}
 
 	@Override
@@ -159,7 +158,6 @@ public final class MetalSurface implements GpuSurfaceBackend {
 		if (this.surface == 0L) {
 			return;
 		}
-		this.present();
 		// The last presented frame's blit pass may still be reading the surface's pipeline state on the GPU.
 		if (this.presentSerial > this.device.completedSerial()) {
 			Mtl.deviceWaitSerial(this.device.handle(), this.presentSerial, CLOSE_TIMEOUT_NS);

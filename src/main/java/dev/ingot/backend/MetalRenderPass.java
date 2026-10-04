@@ -558,8 +558,16 @@ public final class MetalRenderPass implements RenderPassBackend {
 		if (vertexCount < 3 || instanceCount <= 0) {
 			return;
 		}
-		Mtl.renderDrawIndexed(this.encoderHandle, MetalFormats.PRIMITIVE_TRIANGLE, (vertexCount - 2) * 3, MetalFormats.INDEX_UINT32,
-			fanIndices(this.device, vertexCount), 0L, instanceCount, firstVertex, firstInstance);
+		long indices = fanIndices(this.device, vertexCount);
+		if (indices == 0L) {
+			if (WARNED.add(this.pipeline.name())) {
+				Ingot.LOGGER.warn("Ingot: skipping draws: pipeline {} draws a triangle fan but the fan index buffer could not be created: {}",
+					this.pipeline.name(), MemoryUtil.memUTF8(Mtl.lastError()));
+			}
+			return;
+		}
+		Mtl.renderDrawIndexed(this.encoderHandle, MetalFormats.PRIMITIVE_TRIANGLE, (vertexCount - 2) * 3, MetalFormats.INDEX_UINT32, indices, 0L,
+			instanceCount, firstVertex, firstInstance);
 	}
 
 	/**
@@ -625,7 +633,10 @@ public final class MetalRenderPass implements RenderPassBackend {
 		return shortIndices ? Short.toUnsignedInt(MemoryUtil.memGetShort(base + 2L * i)) : MemoryUtil.memGetInt(base + 4L * i);
 	}
 
-	/** The shared fan index buffer, grown (to a power of two) to cover fans of {@code vertexCount} vertices. */
+	/**
+	 * The shared fan index buffer, grown (to a power of two) to cover fans of {@code vertexCount} vertices; 0 if it
+	 * could not be created (ingot_last_error says why).
+	 */
 	private static long fanIndices(MetalDevice device, int vertexCount) {
 		if (vertexCount <= fanVertexCapacity && device == fanDevice) {
 			return fanIndexBuffer;
@@ -647,7 +658,7 @@ public final class MetalRenderPass implements RenderPassBackend {
 			MemoryUtil.nmemFree(data);
 		}
 		if (buffer == 0L) {
-			throw new IllegalStateException("Could not create the triangle fan index buffer: " + MemoryUtil.memUTF8(Mtl.lastError()));
+			return 0L;
 		}
 		if (device == fanDevice) {
 			device.releaseLater(fanIndexBuffer);
