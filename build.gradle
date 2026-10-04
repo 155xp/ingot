@@ -1,0 +1,110 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+}
+
+fabricApi {
+	// Client game tests drive a real client (world load, screenshots, frame timing) against the Metal backend.
+	configureTests {
+		createSourceSet = true
+		modId = "ingot-gametest"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// Fabric API is only needed by the client game tests, never at runtime.
+	gametestImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+// ---------------------------------------------------------------------------
+// Native bridge: native/src/*.m -> universal libingot.dylib, bundled at natives/macos/
+// ---------------------------------------------------------------------------
+
+def nativeSrcDir = layout.projectDirectory.dir("native")
+def nativeOutDir = layout.buildDirectory.dir("native")
+def isMac = System.getProperty("os.name").toLowerCase().contains("mac")
+
+tasks.register("compileNative", Exec) {
+	description = "Builds the Objective-C Metal bridge (libingot.dylib)"
+	group = "build"
+	onlyIf { isMac }
+
+	inputs.dir(nativeSrcDir)
+	outputs.dir(nativeOutDir)
+
+	def sources = fileTree(nativeSrcDir.dir("src")) { include "**/*.m" }.files.sort()
+	def outFile = nativeOutDir.get().file("natives/macos/libingot.dylib").asFile
+
+	doFirst { outFile.parentFile.mkdirs() }
+
+	executable "xcrun"
+	args(["-sdk", "macosx", "clang",
+		"-arch", "arm64", "-arch", "x86_64",
+		"-mmacosx-version-min=12.0",
+		"-dynamiclib", "-install_name", "@rpath/libingot.dylib",
+		"-fobjc-arc", "-fvisibility=hidden",
+		"-O2", "-g",
+		"-Wall", "-Wextra", "-Wno-unused-parameter", "-Werror=implicit-function-declaration",
+		"-I", nativeSrcDir.dir("include").asFile.absolutePath,
+		"-framework", "Foundation", "-framework", "Metal", "-framework", "QuartzCore",
+		"-o", outFile.absolutePath] + sources.collect { it.absolutePath })
+}
+
+processResources {
+	dependsOn "compileNative"
+	from(nativeOutDir) {
+		include "natives/**"
+	}
+
+	def version = project.version
+	inputs.property "version", version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = "UTF-8"
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+loom {
+	runs {
+		configureEach {
+			// FFM downcalls into libingot need native access; the vanilla launcher passes the same flag.
+			vmArg "--enable-native-access=ALL-UNNAMED"
+		}
+	}
+}
+
+jar {
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
+	from("LICENSE") {
+		rename { "${it}_$projectName" }
+	}
+}

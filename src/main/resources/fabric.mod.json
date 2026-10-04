@@ -1,0 +1,21 @@
+{
+	"schemaVersion": 1,
+	"id": "ingot",
+	"version": "${version}",
+	"name": "Ingot",
+	"description": "A native Apple Metal rendering backend for Minecraft on macOS.",
+	"authors": [
+		"155xp"
+	],
+	"license": "MIT",
+	"icon": "assets/ingot/icon.png",
+	"environment": "client",
+	"mixins": [
+		"ingot.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25"
+	}
+}
