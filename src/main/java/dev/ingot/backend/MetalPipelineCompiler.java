@@ -27,8 +27,9 @@ import static java.lang.foreign.ValueLayout.JAVA_LONG;
 
 /**
  * GpuDeviceBackend.compilePipeline for Metal. Runs on worker threads, concurrently: SPIR-V → MSL, per-stage
- * MTLLibrary (cached by MSL hash), default PSO. Must finish all SPIR-V access before returning (the frontend frees
- * the modules after finishCompile). Failures log and yield Pending.NULL. Owner: pipelines.
+ * MTLLibrary (cached by MSL hash), default PSO (with and without D32 for depth-less pipelines, like Vulkan's pair).
+ * Must finish all SPIR-V access before returning (the frontend frees the modules after finishCompile). Failures log
+ * and yield Pending.NULL. Owner: pipelines.
  */
 public final class MetalPipelineCompiler {
 	// IngotPipelineDesc (native/include/ingot.h, which _Static_asserts the same offsets).
@@ -127,6 +128,11 @@ public final class MetalPipelineCompiler {
 			MetalRenderPipeline pipeline = new MetalRenderPipeline(device, createInfo, slots, vertex, fragment, vertexFunction,
 				fragmentFunction, desc, MetalRenderPipeline.variantKey(depthFormat, MetalFormats.PIXEL_INVALID, colorMask), state);
 			built = true;
+			if (depthFormat == MetalFormats.PIXEL_INVALID) {
+				// Depth-less pipelines also draw into passes with the D32 attachment (the GUI on the main target, sky);
+				// build that variant here too, as Vulkan does, rather than on the render thread at first use.
+				pipeline.prebuildVariant(MetalFormats.PIXEL_DEPTH32_FLOAT, MetalFormats.PIXEL_INVALID, colorMask);
+			}
 			return pipeline;
 		} finally {
 			if (!built) {
@@ -285,7 +291,8 @@ public final class MetalPipelineCompiler {
 	/**
 	 * Device-lifetime MTLLibrary cache. The same MSL is common across pipelines (define variants that differ only in
 	 * unused code, shared post-effect vertex shaders) and across resource reloads. Concurrent requests for the same
-	 * source wait for one compile. Failures are cached too: compiling the same source again fails the same way.
+	 * source wait for one compile and share its result. A failure is dropped once those waiters have it, so a later
+	 * request (e.g. the next resource reload) compiles again: the Metal compiler service can fail transiently.
 	 */
 	private static final class LibraryCache {
 		private static final Library FAILED = new Library(0L, "MSL compile failed (see the first error for this shader)");
@@ -307,6 +314,9 @@ public final class MetalPipelineCompiler {
 					} finally {
 						// Always complete, so threads waiting for this source never hang.
 						created.complete(library);
+						if (library.handle() == 0L) {
+							this.libraries.remove(key, created);
+						}
 					}
 				}
 			}

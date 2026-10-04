@@ -24,7 +24,7 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 	/** Argument-table index of push constants in both stages. CONTRACT */
 	public static final int PUSH_CONSTANT_SLOT = SpirvToMsl.PUSH_CONSTANT_BUFFER;
 
-	/** Set once any pipeline has built a non-default variant; later ones log at debug level. Render thread. */
+	/** Set once any pipeline has built a variant on the render thread; later ones log at debug level. Render thread. */
 	private static boolean variantWarned;
 
 	private final MetalDevice device;
@@ -48,7 +48,8 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 	/** The IngotPipelineDesc the default variant was built from; variants rewrite its attachment fields. */
 	private final MemorySegment desc;
 	private final List<@Nullable ColorTargetState> colorTargets;
-	// PSO variants, render thread only. Index 0 is the default variant; a 0 state is a variant that failed to build.
+	// PSO variants, render thread only once published. Index 0 is the default variant (plus the D32 one for depth-less
+	// pipelines, built by the compiling worker); a 0 state is a variant that failed to build.
 	private long[] variantKeys = new long[2];
 	private long[] variantStates = new long[2];
 	private int variantCount;
@@ -189,8 +190,8 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 	}
 
 	/**
-	 * id&lt;MTLRenderPipelineState&gt; for a pass with these attachments, compiled on first use and cached.
-	 * Returns 0 if the variant cannot be built (logged once). Render thread. CONTRACT
+	 * id&lt;MTLRenderPipelineState&gt; for a pass with these attachments, compiled on first use (unless the compiling
+	 * worker already built it) and cached. Returns 0 if the variant cannot be built (logged once). Render thread. CONTRACT
 	 */
 	public long pipelineState(int depthPixelFormat, int stencilPixelFormat, int colorAttachmentMask) {
 		long key = variantKey(depthPixelFormat, stencilPixelFormat, colorAttachmentMask);
@@ -199,10 +200,16 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 				return this.variantStates[i];
 			}
 		}
-		return this.createVariant(key, depthPixelFormat, stencilPixelFormat, colorAttachmentMask);
+		return this.createVariant(key, depthPixelFormat, stencilPixelFormat, colorAttachmentMask, true);
 	}
 
-	private long createVariant(long key, int depthPixelFormat, int stencilPixelFormat, int colorAttachmentMask) {
+	/** Builds a variant on the compiling worker thread, before the pipeline is handed to the frontend. */
+	void prebuildVariant(int depthPixelFormat, int stencilPixelFormat, int colorAttachmentMask) {
+		this.createVariant(variantKey(depthPixelFormat, stencilPixelFormat, colorAttachmentMask), depthPixelFormat, stencilPixelFormat,
+			colorAttachmentMask, false);
+	}
+
+	private long createVariant(long key, int depthPixelFormat, int stencilPixelFormat, int colorAttachmentMask, boolean renderThread) {
 		if (this.closed) {
 			return 0L;
 		}
@@ -214,11 +221,11 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 			state = Mtl.pipelineCreate(this.device.handle(), this.desc.address());
 			if (state == 0L) {
 				Ingot.LOGGER.error("Ingot: cannot build pipeline {} for {}: {}", this.name, attachments, MetalPipelineCompiler.lastError());
-			} else if (!variantWarned) {
+			} else if (renderThread && !variantWarned) {
 				variantWarned = true;
 				Ingot.LOGGER.warn("Ingot: compiling a render pipeline state on the render thread: {} for {} (further variants are logged at debug level)",
 					this.name, attachments);
-			} else {
+			} else if (renderThread) {
 				Ingot.LOGGER.debug("Ingot: compiling a render pipeline state on the render thread: {} for {}", this.name, attachments);
 			}
 		} catch (MetalPipelineCompiler.PipelineException e) {
