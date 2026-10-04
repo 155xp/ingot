@@ -54,11 +54,15 @@ import net.minecraft.resources.Identifier;
 /**
  * Runs every vanilla Minecraft 26.3 render pipeline through the REAL renderpearl frontend
  * (com.mojang.renderpearl.frontend.shaders.PipelineBuilder: shaderc GLSL->SPIR-V, reflection, binding rewrite),
- * captures the BackendRenderPipeline.CreateInfo a backend would receive, and translates each stage to MSL with
- * MslTranslator. Writes .metal files + a pipelines.json manifest for metalcheck (runtime Metal compile + PSO creation).
+ * captures the BackendRenderPipeline.CreateInfo a backend would receive, and translates each stage to MSL with the
+ * mod's dev.ingot.shader.SpirvToMsl (default) or the prototype MslTranslator (--translator prototype). Writes .metal
+ * files + a pipelines.json manifest for metalcheck (runtime Metal compile + PSO creation).
  *
- * Flags: --out DIR  --msl 20400|30000  --binding compact|identity|decoration  --no-flip-y  --no-explicit-depth
- *        --no-texture-buffer-native  --no-pad-outputs  --[no-]zero-init  --only REGEX  --test-shaders DIR  --threads N
+ * Flags: --out DIR  --translator ingot|prototype  --compare-prototype (also run the prototype, require identical output)
+ *        --desc (dump the mod's IngotPipelineDesc bytes for metalcheck --desc)
+ *        prototype only: --msl 20400|30000  --binding compact|identity|decoration  --no-flip-y  --no-texture-buffer-native
+ *        --no-pad-outputs  --[no-]zero-init
+ *        both: --no-explicit-depth  --only REGEX  --test-shaders DIR  --threads N
  */
 public final class ShaderXlate {
     // ---- options ------------------------------------------------------------------------------------------
@@ -68,14 +72,20 @@ public final class ShaderXlate {
     static boolean drawParameters = true;  // Metal [[instance_id]] / [[vertex_id]] include base instance / base vertex
     static Pattern only = null;
     static MslTranslator.Options mslOptions = MslTranslator.Options.defaults();
+    static boolean useIngot = true;        // SpirvToMsl has the prototype's default options built in
+    static boolean comparePrototype = false;
+    static boolean dumpDesc = false;
     static long wallNanos;
 
     // ---- results ------------------------------------------------------------------------------------------
     record PipelineRecord(String name, String source, long frontendNanos, BackendRenderPipeline.CreateInfo createInfo,
-                          MslTranslator.Result result, String error) {
+                          MslTranslator.Result result, String error, Map<String, Object> extra) {
     }
 
     static final Map<String, PipelineRecord> captured = java.util.Collections.synchronizedMap(new TreeMap<>());
+    static final List<String> mismatches = java.util.Collections.synchronizedList(new ArrayList<>());
+    static final java.util.concurrent.atomic.AtomicLong prototypeNanos = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicInteger comparedStages = new java.util.concurrent.atomic.AtomicInteger();
     static final Map<String, String> sourceByName = new java.util.concurrent.ConcurrentHashMap<>();
     static final Map<String, Long> startByName = new java.util.concurrent.ConcurrentHashMap<>();
     static final Map<String, RenderPipeline> pipelineByName = new java.util.concurrent.ConcurrentHashMap<>();
@@ -85,6 +95,7 @@ public final class ShaderXlate {
         parseArgs(args);
         Files.createDirectories(out.resolve("msl"));
         Files.createDirectories(out.resolve("spv"));
+        if (dumpDesc) Files.createDirectories(out.resolve("desc"));
 
         DeviceInfo deviceInfo = new DeviceInfo(
             "Apple (shader-xlate)", "Apple", "shader-xlate", true /* isZZeroToOne */, "Metal", 1.0F,
@@ -141,7 +152,7 @@ public final class ShaderXlate {
             for (RenderPipeline pipeline : selected) {
                 String name = pipeline.getLocation().toString();
                 captured.putIfAbsent(name, new PipelineRecord(name, sourceByName.get(name), 0L, null, null,
-                    "frontend rejected pipeline (see log above)"));
+                    "frontend rejected pipeline (see log above)", Map.of()));
             }
             Map<String, Long> shadercTimes = timeShadercPerStage(pipelines, shaderSource);
             writeOutputs(shadercTimes);
@@ -153,16 +164,79 @@ public final class ShaderXlate {
         long frontendNanos = System.nanoTime() - startByName.getOrDefault(ci.name(), System.nanoTime());
         MslTranslator.Result result = null;
         String error = null;
+        Map<String, Object> extra = new LinkedHashMap<>();
         try {
             for (BackendRenderPipeline.CreateInfo.Shader s : ci.shaders()) {
                 dumpSpv(ci.name(), s);
             }
-            result = MslTranslator.translate(ci, mslOptions);
+            result = useIngot ? ingotTranslate(ci, extra) : MslTranslator.translate(ci, mslOptions);
+            if (comparePrototype) {
+                MslTranslator.Result prototype = MslTranslator.translate(ci, mslOptions);
+                for (MslTranslator.StageResult s : prototype.stages()) prototypeNanos.addAndGet(s.nanos());
+                compare(ci.name(), result, prototype);
+            }
+            if (dumpDesc) dumpDesc(ci, extra);
         } catch (Throwable t) {
             error = t.toString();
         }
-        captured.put(ci.name(), new PipelineRecord(ci.name(), sourceByName.get(ci.name()), frontendNanos, ci, result, error));
+        captured.put(ci.name(), new PipelineRecord(ci.name(), sourceByName.get(ci.name()), frontendNanos, ci, result, error, extra));
         return () -> null;
+    }
+
+    /** The mod's translator, converted to the prototype's result records so both share the manifest writer. */
+    static MslTranslator.Result ingotTranslate(BackendRenderPipeline.CreateInfo ci, Map<String, Object> extra) throws Exception {
+        List<dev.ingot.shader.SpirvToMsl.Slot> slots = dev.ingot.shader.SpirvToMsl.assignSlots(ci.uniforms());
+        List<MslTranslator.StageResult> stages = new ArrayList<>();
+        Map<String, Object> pushConstants = new LinkedHashMap<>();
+        for (BackendRenderPipeline.CreateInfo.Shader shader : ci.shaders()) {
+            long t0 = System.nanoTime();
+            dev.ingot.shader.SpirvToMsl.Stage stage = dev.ingot.shader.SpirvToMsl.translate(shader.module(), shader.entryPoint(), slots);
+            long nanos = System.nanoTime() - t0;
+            List<Integer> used = new ArrayList<>();
+            for (int i = 0; i < slots.size(); i++) {
+                if (stage.uses(i)) used.add(i);
+            }
+            ShaderType type = shader.module().type();
+            stages.add(new MslTranslator.StageResult(type, stage.entryPoint(), stage.msl(), nanos, List.copyOf(used), null));
+            pushConstants.put(type == ShaderType.VERTEX ? "vert" : "frag", stage.usesPushConstants());
+        }
+        extra.put("usesPushConstants", pushConstants);
+        List<MslTranslator.Slot> converted = new ArrayList<>();
+        for (int i = 0; i < slots.size(); i++) {
+            BindGroupLayout.UniformDescription u = ci.uniforms().get(i);
+            dev.ingot.shader.SpirvToMsl.Slot s = slots.get(i);
+            converted.add(new MslTranslator.Slot(i, u.name(), u.type(), s.buffer(), s.texture(), s.sampler()));
+        }
+        return new MslTranslator.Result(converted, stages);
+    }
+
+    static void compare(String pipeline, MslTranslator.Result ingot, MslTranslator.Result prototype) {
+        if (!ingot.slots().equals(prototype.slots())) mismatches.add(pipeline + ": slots " + ingot.slots() + " vs " + prototype.slots());
+        if (ingot.stages().size() != prototype.stages().size()) {
+            mismatches.add(pipeline + ": stage count");
+            return;
+        }
+        for (int i = 0; i < ingot.stages().size(); i++) {
+            MslTranslator.StageResult a = ingot.stages().get(i), b = prototype.stages().get(i);
+            String stage = pipeline + " " + a.type();
+            if (!a.msl().equals(b.msl())) mismatches.add(stage + ": MSL text differs");
+            if (!a.entryPoint().equals(b.entryPoint())) mismatches.add(stage + ": entry point " + a.entryPoint() + " vs " + b.entryPoint());
+            if (!a.usedBindings().equals(b.usedBindings())) mismatches.add(stage + ": used bindings " + a.usedBindings() + " vs " + b.usedBindings());
+            comparedStages.incrementAndGet();
+        }
+    }
+
+    /** Default PSO variant plus the other depth variant, as written by MetalPipelineCompiler / MetalRenderPipeline. */
+    static void dumpDesc(BackendRenderPipeline.CreateInfo ci, Map<String, Object> extra) throws Exception {
+        List<dev.ingot.backend.DescProbe.Variant> variants = dev.ingot.backend.DescProbe.variants(ci);
+        List<Map<String, Object>> files = new ArrayList<>();
+        for (int i = 0; i < variants.size(); i++) {
+            dev.ingot.backend.DescProbe.Variant v = variants.get(i);
+            String file = "desc/" + sanitize(ci.name()) + "." + i + ".bin";
+            Files.write(out.resolve(file), v.bytes());
+            files.add(Map.of("file", file, "depthFormat", v.depthFormat(), "colorMask", v.colorMask()));
+        }
+        extra.put("desc", files);
     }
 
     static void dumpSpv(String pipeline, BackendRenderPipeline.CreateInfo.Shader s) throws IOException {
@@ -238,7 +312,7 @@ public final class ShaderXlate {
                     st.put("file", file);
                     st.put("entry", s.entryPoint());
                     st.put("usedBindings", s.usedBindings());
-                    if (s.type() == ShaderType.VERTEX) st.put("usedVertexAttributes", s.usedVertexAttributes());
+                    if (s.usedVertexAttributes() != null) st.put("usedVertexAttributes", s.usedVertexAttributes());
                     m.put(stage, st);
                     spvcTotal += s.nanos();
                     if (s.type() == ShaderType.VERTEX) { vsFile = file; vsNs = s.nanos(); } else { fsFile = file; fsNs = s.nanos(); }
@@ -288,6 +362,7 @@ public final class ShaderXlate {
                 }
                 m.put("topology", ci.primitiveTopology().name());
                 m.put("pushConstantsSize", ci.pushConstantsSize());
+                m.putAll(r.extra());
                 tsv.append(String.join("\t", r.name(), r.source(), "ok", ms(r.frontendNanos()), ms(vsNs), ms(fsNs), vsFile, fsFile,
                     slotsSummary(r.result().slots()), "")).append('\n');
             } else {
@@ -309,6 +384,7 @@ public final class ShaderXlate {
         }
         Files.writeString(out.resolve("shaderc-times.tsv"), sh.toString());
         Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("translator", useIngot ? "ingot (dev.ingot.shader.SpirvToMsl)" : "prototype (MslTranslator)");
         summary.put("options", mslOptions.toString());
         summary.put("explicitDepth", explicitDepth);
         summary.put("threads", threads);
@@ -320,6 +396,12 @@ public final class ShaderXlate {
         summary.put("uniqueShadercStages", shadercTimes.size());
         summary.put("shadercTotalMs", ms(shadercTotal));
         summary.put("spvcTotalMs", ms(spvcTotal));
+        if (comparePrototype) {
+            summary.put("prototypeSpvcTotalMs", ms(prototypeNanos.get()));
+            summary.put("stagesComparedWithPrototype", comparedStages.get());
+            summary.put("prototypeMismatches", mismatches.size());
+            mismatches.forEach(m -> System.out.println("MISMATCH " + m));
+        }
         Files.writeString(out.resolve("summary.json"), gson.toJson(summary));
         System.out.println(gson.toJson(summary));
     }
@@ -521,10 +603,20 @@ public final class ShaderXlate {
                 case "--only" -> only = Pattern.compile(args[++i]);
                 case "--test-shaders" -> testShaderDir = Path.of(args[++i]);
                 case "--threads" -> threads = Integer.parseInt(args[++i]);
+                case "--translator" -> useIngot = switch (args[++i]) {
+                    case "ingot" -> true;
+                    case "prototype" -> false;
+                    default -> throw new IllegalArgumentException("--translator ingot|prototype");
+                };
+                case "--compare-prototype" -> comparePrototype = true;
+                case "--desc" -> dumpDesc = true;
                 default -> throw new IllegalArgumentException("unknown arg " + args[i]);
             }
         }
         mslOptions = new MslTranslator.Options(msl, flip, mode, deco, tbn, pad, o.pointSizeBuiltin(), zero);
+        if (useIngot && !mslOptions.equals(MslTranslator.Options.defaults())) {
+            throw new IllegalArgumentException("translation options apply to --translator prototype only (SpirvToMsl uses the defaults)");
+        }
     }
 
     static String sanitize(String s) {
