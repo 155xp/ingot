@@ -119,14 +119,22 @@ INGOT_EXPORT void ingot_util_clear_region(void *device, void *cmd, void *color_t
         // still be loaded and stored by the pass.
         __unsafe_unretained id<MTLTexture> color = (flags & 1u) != 0 ? INGOT_OBJ(id<MTLTexture>, color_texture) : nil;
         __unsafe_unretained id<MTLTexture> depth_target = (flags & 2u) != 0 ? INGOT_OBJ(id<MTLTexture>, depth_texture) : nil;
-        __unsafe_unretained id<MTLTexture> reference = color != nil ? color : depth_target;
-        if (reference == nil) {
+        if (color == nil && depth_target == nil) {
             return;
         }
 
-        // Clip the rectangle to the mip level; scissor rects must lie inside the attachment.
-        NSUInteger level_width = MAX(reference.width >> level, (NSUInteger)1);
-        NSUInteger level_height = MAX(reference.height >> level, (NSUInteger)1);
+        // Clip the rectangle to the mip level: scissor rects must lie inside the pass, which is as large as its
+        // smallest attachment.
+        NSUInteger level_width = NSUIntegerMax;
+        NSUInteger level_height = NSUIntegerMax;
+        if (color != nil) {
+            level_width = MAX(color.width >> level, (NSUInteger)1);
+            level_height = MAX(color.height >> level, (NSUInteger)1);
+        }
+        if (depth_target != nil) {
+            level_width = MIN(level_width, MAX(depth_target.width >> level, (NSUInteger)1));
+            level_height = MIN(level_height, MAX(depth_target.height >> level, (NSUInteger)1));
+        }
         if (x >= level_width || y >= level_height || width == 0 || height == 0) {
             return;
         }

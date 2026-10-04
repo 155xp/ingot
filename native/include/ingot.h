@@ -119,7 +119,7 @@ INGOT_EXPORT void *ingot_texture_view_create(void *texture, uint32_t pixel_forma
                                              uint32_t level_count, uint32_t base_slice, uint32_t slice_count);
 
 // MTLTextureTypeTextureBuffer view over [offset, offset + element_count * element_size) of a buffer.
-// offset must satisfy ingot_device_texture_buffer_alignment().
+// offset must satisfy ingot_device_texture_buffer_alignment(). Fails (0 + error) when element_count is 0.
 INGOT_EXPORT void *ingot_texture_buffer_create(void *buffer, uint32_t pixel_format, uint64_t offset, uint64_t element_count,
                                                uint64_t bytes_per_row);
 
@@ -351,7 +351,7 @@ INGOT_EXPORT void ingot_render_pop_debug_group(void *encoder);
 
 // Clears a rectangle of a color and/or depth attachment (either may be null) by drawing a scissored quad.
 // flags: bit 0 = clear color, bit 1 = clear depth. Only the attachments being cleared are bound; the rectangle is
-// clipped to the mip level. The color texture must have a normalized or float format.
+// clipped to the smallest of them at the mip level. The color texture must have a normalized or float format.
 INGOT_EXPORT void ingot_util_clear_region(void *device, void *cmd, void *color_texture, void *depth_texture, uint32_t level,
                                           uint32_t x, uint32_t y, uint32_t width, uint32_t height,
                                           float r, float g, float b, float a, float depth, uint32_t flags);

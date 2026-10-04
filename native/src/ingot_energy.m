@@ -108,11 +108,14 @@ INGOT_EXPORT void ingot_wait_until(int64_t deadline_ns) {
             .data = (int64_t)deadline,
         };
         struct kevent64_s fired;
-        if (kevent64(queue, &timer, 1, &fired, 1, 0, NULL) < 0 && errno != EINTR) {
+        int count = kevent64(queue, &timer, 1, &fired, 1, 0, NULL);
+        // A timer the kernel rejects comes back as an EV_ERROR event rather than a failed call; re-arming it would
+        // spin until the deadline, so both kinds of failure fall back.
+        if ((count < 0 && errno != EINTR) || (count > 0 && (fired.flags & EV_ERROR) != 0)) {
             break;
         }
     }
-    // Without a kqueue (or if kevent fails) fall back to mach_wait_until, which only returns early when interrupted.
+    // Without a kqueue (or if the timer fails) fall back to mach_wait_until, which only returns early when interrupted.
     while (mach_absolute_time() < deadline) {
         if (mach_wait_until(deadline) == KERN_SUCCESS) {
             break;

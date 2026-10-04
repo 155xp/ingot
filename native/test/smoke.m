@@ -185,6 +185,7 @@ static void test_buffers(void *device) {
     void *view0 = ingot_texture_buffer_create(src, MTLPixelFormatR32Uint, 0, 16, 64);
     void *view1 = ingot_texture_buffer_create(src, MTLPixelFormatR32Uint, alignment, 8, 32);
     CHECK(view0 != NULL && view1 != NULL, "texture buffer views: %s", ingot_last_error());
+    CHECK(ingot_texture_buffer_create(src, MTLPixelFormatR32Uint, 0, 0, 64) == NULL, "empty texture buffer view fails");
 
     // Requests beyond the device limits fail with an error instead of tripping Metal's descriptor assertions.
     void *huge = ingot_buffer_create(device, ingot_device_query(device, INGOT_QUERY_MAX_BUFFER_LENGTH) + 1, SHARED, NULL, NULL);
@@ -382,9 +383,12 @@ static void test_render(void *device, Scene *scene) {
                                         MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead, PRIVATE_TEXTURE, "color target");
     void *depth = ingot_texture_create(device, MTLTextureType2D, MTLPixelFormatDepth32Float, RT, RT, 1, MTLTextureUsageRenderTarget,
                                        PRIVATE_TEXTURE, "depth target");
+    void *small_depth = ingot_texture_create(device, MTLTextureType2D, MTLPixelFormatDepth32Float, RT / 2, RT / 2, 1,
+                                             MTLTextureUsageRenderTarget, PRIVATE_TEXTURE, "small depth target");
     void *color_readback = make_buffer(device, NULL, RT * RT * 4, SHARED);
     void *depth_readback = make_buffer(device, NULL, RT * RT * 4, SHARED);
-    CHECK(scene->color != NULL && depth != NULL && white_tex != NULL && white_view != NULL, "render resources: %s", ingot_last_error());
+    CHECK(scene->color != NULL && depth != NULL && small_depth != NULL && white_tex != NULL && white_view != NULL, "render resources: %s",
+          ingot_last_error());
 
     void *cmd = ingot_cmd_create(device, "render");
     ingot_cmd_push_debug_group(cmd, "smoke render");
@@ -463,10 +467,12 @@ static void test_render(void *device, Scene *scene) {
     ingot_render_end(enc);
 
     // Region clears: color + depth over parts of cells 0 and 1; color only, clipped at the corner; depth only;
-    // and two no-ops (no flags, rectangle outside the texture).
+    // color with a half-size depth texture, clipped to the depth texture; and two no-ops (no flags, rectangle outside
+    // the texture).
     ingot_util_clear_region(device, cmd, scene->color, depth, 0, 4, 2, 8, 3, 200 / 255.0f, 100 / 255.0f, 50 / 255.0f, 1.0f, 0.25f, 3);
     ingot_util_clear_region(device, cmd, scene->color, depth, 0, 60, 60, 10, 10, 10 / 255.0f, 20 / 255.0f, 30 / 255.0f, 40 / 255.0f, 0.0f, 1);
     ingot_util_clear_region(device, cmd, scene->color, depth, 0, 0, 56, 8, 8, 1.0f, 1.0f, 1.0f, 1.0f, 0.75f, 2);
+    ingot_util_clear_region(device, cmd, scene->color, small_depth, 0, 28, 28, 8, 8, 0.0f, 128 / 255.0f, 1.0f, 1.0f, 0.5f, 3);
     ingot_util_clear_region(device, cmd, scene->color, depth, 0, 0, 0, 64, 64, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0);
     ingot_util_clear_region(device, cmd, scene->color, depth, 0, 64, 0, 8, 8, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 3);
 
@@ -495,6 +501,7 @@ static void test_render(void *device, Scene *scene) {
     fill_depth(expected_depth, 4, 2, 8, 3, 0.25f);
     fill_rect(scene->expected, 60, 60, 4, 4, (const uint8_t[4]){10, 20, 30, 40});
     fill_depth(expected_depth, 0, 56, 8, 8, 0.75f);
+    fill_rect(scene->expected, 28, 28, 4, 4, (const uint8_t[4]){0, 128, 255, 255});
 
     const uint8_t *pixels = ingot_buffer_contents(color_readback);
     const float *depths = ingot_buffer_contents(depth_readback);
@@ -526,6 +533,7 @@ static void test_render(void *device, Scene *scene) {
 
     ingot_release(color_readback);
     ingot_release(depth_readback);
+    ingot_release(small_depth);
     ingot_release(depth);
     ingot_release(white_view);
     ingot_release(white_tex);

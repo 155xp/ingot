@@ -95,6 +95,11 @@ INGOT_EXPORT void *ingot_texture_view_create(void *texture, uint32_t pixel_forma
 INGOT_EXPORT void *ingot_texture_buffer_create(void *buffer, uint32_t pixel_format, uint64_t offset, uint64_t element_count,
                                                uint64_t bytes_per_row) {
     @autoreleasepool {
+        // A zero-width descriptor trips a Metal assertion that aborts the process (a slice shorter than one texel).
+        if (element_count == 0) {
+            ingot_set_error_cstr("texture buffer view has no elements");
+            return NULL;
+        }
         __unsafe_unretained id<MTLBuffer> source = INGOT_OBJ(id<MTLBuffer>, buffer);
         // The descriptor's resource options must match the buffer's (storage and CPU cache mode).
         MTLTextureDescriptor *desc = [MTLTextureDescriptor textureBufferDescriptorWithPixelFormat:(MTLPixelFormat)pixel_format
