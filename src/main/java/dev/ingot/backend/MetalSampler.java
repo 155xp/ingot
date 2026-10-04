@@ -7,48 +7,73 @@ import java.util.OptionalDouble;
 
 /** An MTLSamplerState. Owner: core. */
 public class MetalSampler implements GpuSampler {
+	private final MetalDevice device;
+	private final long handle;
+	private final AddressMode addressModeU;
+	private final AddressMode addressModeV;
+	private final FilterMode minFilter;
+	private final FilterMode magFilter;
+	private final int maxAnisotropy;
+	private final OptionalDouble maxLod;
+	private boolean closed;
+
+	MetalSampler(MetalDevice device, long handle, AddressMode addressModeU, AddressMode addressModeV, FilterMode minFilter, FilterMode magFilter,
+				 int maxAnisotropy, OptionalDouble maxLod) {
+		this.device = device;
+		this.handle = handle;
+		this.addressModeU = addressModeU;
+		this.addressModeV = addressModeV;
+		this.minFilter = minFilter;
+		this.magFilter = magFilter;
+		this.maxAnisotropy = maxAnisotropy;
+		this.maxLod = maxLod;
+	}
+
 	/** id&lt;MTLSamplerState&gt; handle. CONTRACT */
 	public long handle() {
-		throw new UnsupportedOperationException("not implemented");
+		return this.handle;
 	}
 
 	@Override
 	public AddressMode getAddressModeU() {
-		throw new UnsupportedOperationException("not implemented");
+		return this.addressModeU;
 	}
 
 	@Override
 	public AddressMode getAddressModeV() {
-		throw new UnsupportedOperationException("not implemented");
+		return this.addressModeV;
 	}
 
 	@Override
 	public FilterMode getMinFilter() {
-		throw new UnsupportedOperationException("not implemented");
+		return this.minFilter;
 	}
 
 	@Override
 	public FilterMode getMagFilter() {
-		throw new UnsupportedOperationException("not implemented");
+		return this.magFilter;
 	}
 
 	@Override
 	public int getMaxAnisotropy() {
-		throw new UnsupportedOperationException("not implemented");
+		return this.maxAnisotropy;
 	}
 
 	@Override
 	public OptionalDouble getMaxLod() {
-		throw new UnsupportedOperationException("not implemented");
+		return this.maxLod;
 	}
 
 	@Override
 	public boolean isClosed() {
-		throw new UnsupportedOperationException("not implemented");
+		return this.closed;
 	}
 
 	@Override
 	public void close() {
-		throw new UnsupportedOperationException("not implemented");
+		if (!this.closed) {
+			this.closed = true;
+			this.device.releaseLater(this.handle);
+		}
 	}
 }
