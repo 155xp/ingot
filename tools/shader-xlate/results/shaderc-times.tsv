@@ -1,0 +1,256 @@
+stage_key	shaderc_ms
+FRAGMENT ingot_test:core/orientation ShaderDefines[values={}, flags=[]]	0.252
+FRAGMENT ingot_test:core/push_test ShaderDefines[values={}, flags=[]]	0.282
+FRAGMENT minecraft:core/animate_sprite_blit ShaderDefines[values={}, flags=[]]	0.223
+FRAGMENT minecraft:core/animate_sprite_interpolate ShaderDefines[values={}, flags=[]]	0.249
+FRAGMENT minecraft:core/blit_depth ShaderDefines[values={}, flags=[]]	0.187
+FRAGMENT minecraft:core/blit_screen ShaderDefines[values={}, flags=[]]	0.188
+FRAGMENT minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.968
+FRAGMENT minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.480
+FRAGMENT minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.732
+FRAGMENT minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[]]	0.394
+FRAGMENT minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.5}, flags=[]]	0.396
+FRAGMENT minecraft:core/block ShaderDefines[values={}, flags=[]]	0.424
+FRAGMENT minecraft:core/clouds ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.929
+FRAGMENT minecraft:core/clouds ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.451
+FRAGMENT minecraft:core/clouds ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.723
+FRAGMENT minecraft:core/clouds ShaderDefines[values={}, flags=[]]	0.333
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[APPLY_TEXTURE_MATRIX, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ACCUMULATE]]	1.065
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[APPLY_TEXTURE_MATRIX, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.519
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[APPLY_TEXTURE_MATRIX, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.768
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, APPLY_TEXTURE_MATRIX, OIT_ADDITIVE, OIT, OIT_ACCUMULATE]]	0.987
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, APPLY_TEXTURE_MATRIX, OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.597
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, APPLY_TEXTURE_MATRIX, OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.653
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ACCUMULATE]]	0.972
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.520
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.755
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE, PER_FACE_LIGHTING, EMISSIVE]]	0.994
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE, PER_FACE_LIGHTING]]	1.024
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	1.002
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.551
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.774
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[APPLY_TEXTURE_MATRIX, NO_OVERLAY, NO_CARDINAL_LIGHTING]]	0.446
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, APPLY_TEXTURE_MATRIX]]	0.833
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[EMISSIVE, PER_FACE_LIGHTING]]	0.468
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[GLINT, NO_OVERLAY, PER_FACE_LIGHTING]]	0.500
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[NO_OVERLAY, PER_FACE_LIGHTING]]	0.492
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[NO_OVERLAY]]	0.448
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[PER_FACE_LIGHTING, DISSOLVE]]	0.482
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[PER_FACE_LIGHTING]]	0.477
+FRAGMENT minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[]]	0.451
+FRAGMENT minecraft:core/entity ShaderDefines[values={}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING]]	0.423
+FRAGMENT minecraft:core/entity ShaderDefines[values={}, flags=[GLINT]]	0.505
+FRAGMENT minecraft:core/entity ShaderDefines[values={}, flags=[NO_OVERLAY]]	0.440
+FRAGMENT minecraft:core/entity ShaderDefines[values={}, flags=[]]	0.442
+FRAGMENT minecraft:core/glint ShaderDefines[values={}, flags=[]]	0.389
+FRAGMENT minecraft:core/gui ShaderDefines[values={}, flags=[]]	0.206
+FRAGMENT minecraft:core/integrate_depth ShaderDefines[values={}, flags=[]]	0.211
+FRAGMENT minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE, GLINT, GLINT_SPECIAL]]	1.087
+FRAGMENT minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE, GLINT]]	1.066
+FRAGMENT minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	1.000
+FRAGMENT minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.481
+FRAGMENT minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.720
+FRAGMENT minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[GLINT, GLINT_SPECIAL]]	0.515
+FRAGMENT minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[]]	0.609
+FRAGMENT minecraft:core/lightmap ShaderDefines[values={}, flags=[]]	0.425
+FRAGMENT minecraft:core/oit_composite ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT]]	0.690
+FRAGMENT minecraft:core/oit_depth_bounds_cull ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT]]	0.336
+FRAGMENT minecraft:core/panorama ShaderDefines[values={}, flags=[]]	0.203
+FRAGMENT minecraft:core/particle ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	1.037
+FRAGMENT minecraft:core/particle ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.472
+FRAGMENT minecraft:core/particle ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.729
+FRAGMENT minecraft:core/particle ShaderDefines[values={}, flags=[]]	0.568
+FRAGMENT minecraft:core/position ShaderDefines[values={}, flags=[]]	0.401
+FRAGMENT minecraft:core/position_color ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.814
+FRAGMENT minecraft:core/position_color ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.553
+FRAGMENT minecraft:core/position_color ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.613
+FRAGMENT minecraft:core/position_color ShaderDefines[values={}, flags=[]]	0.258
+FRAGMENT minecraft:core/position_tex ShaderDefines[values={}, flags=[]]	0.220
+FRAGMENT minecraft:core/position_tex_color ShaderDefines[values={}, flags=[]]	0.218
+FRAGMENT minecraft:core/rendertype_beacon_beam ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	1.116
+FRAGMENT minecraft:core/rendertype_beacon_beam ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.509
+FRAGMENT minecraft:core/rendertype_beacon_beam ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.766
+FRAGMENT minecraft:core/rendertype_beacon_beam ShaderDefines[values={}, flags=[]]	0.411
+FRAGMENT minecraft:core/rendertype_crumbling ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	1.009
+FRAGMENT minecraft:core/rendertype_crumbling ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.490
+FRAGMENT minecraft:core/rendertype_crumbling ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.750
+FRAGMENT minecraft:core/rendertype_crumbling ShaderDefines[values={}, flags=[]]	0.404
+FRAGMENT minecraft:core/rendertype_end_portal ShaderDefines[values={PORTAL_LAYERS=15}, flags=[]]	0.579
+FRAGMENT minecraft:core/rendertype_end_portal ShaderDefines[values={PORTAL_LAYERS=16}, flags=[]]	0.608
+FRAGMENT minecraft:core/rendertype_entity_shadow ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.959
+FRAGMENT minecraft:core/rendertype_entity_shadow ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.522
+FRAGMENT minecraft:core/rendertype_entity_shadow ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.752
+FRAGMENT minecraft:core/rendertype_entity_shadow ShaderDefines[values={}, flags=[]]	0.409
+FRAGMENT minecraft:core/rendertype_leash ShaderDefines[values={}, flags=[]]	0.379
+FRAGMENT minecraft:core/rendertype_lightning ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ACCUMULATE]]	0.941
+FRAGMENT minecraft:core/rendertype_lightning ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.634
+FRAGMENT minecraft:core/rendertype_lightning ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.639
+FRAGMENT minecraft:core/rendertype_lightning ShaderDefines[values={}, flags=[]]	0.414
+FRAGMENT minecraft:core/rendertype_lines ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	1.108
+FRAGMENT minecraft:core/rendertype_lines ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.469
+FRAGMENT minecraft:core/rendertype_lines ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.745
+FRAGMENT minecraft:core/rendertype_lines ShaderDefines[values={}, flags=[]]	0.423
+FRAGMENT minecraft:core/rendertype_outline ShaderDefines[values={}, flags=[]]	0.244
+FRAGMENT minecraft:core/rendertype_water_mask ShaderDefines[values={}, flags=[]]	0.185
+FRAGMENT minecraft:core/sky ShaderDefines[values={}, flags=[]]	0.351
+FRAGMENT minecraft:core/stars ShaderDefines[values={}, flags=[]]	0.191
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[MULTIDRAW_TERRAIN, OIT, OIT_ACCUMULATE]]	1.403
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[MULTIDRAW_TERRAIN, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.841
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[MULTIDRAW_TERRAIN, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	1.112
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	1.461
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.912
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	1.179
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[MULTIDRAW_TERRAIN]]	0.772
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[]]	0.804
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.5}, flags=[MULTIDRAW_TERRAIN]]	0.811
+FRAGMENT minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.5}, flags=[]]	0.869
+FRAGMENT minecraft:core/terrain ShaderDefines[values={}, flags=[MULTIDRAW_TERRAIN]]	0.781
+FRAGMENT minecraft:core/terrain ShaderDefines[values={}, flags=[]]	0.843
+FRAGMENT minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[IS_GRAYSCALE, OIT, OIT_ACCUMULATE]]	0.980
+FRAGMENT minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[IS_GRAYSCALE, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.489
+FRAGMENT minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[IS_GRAYSCALE, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.740
+FRAGMENT minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.988
+FRAGMENT minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.485
+FRAGMENT minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.750
+FRAGMENT minecraft:core/text ShaderDefines[values={}, flags=[IS_GRAYSCALE, IS_SEE_THROUGH]]	0.247
+FRAGMENT minecraft:core/text ShaderDefines[values={}, flags=[IS_GRAYSCALE]]	0.423
+FRAGMENT minecraft:core/text ShaderDefines[values={}, flags=[IS_GUI, IS_GRAYSCALE]]	0.257
+FRAGMENT minecraft:core/text ShaderDefines[values={}, flags=[IS_GUI]]	0.259
+FRAGMENT minecraft:core/text ShaderDefines[values={}, flags=[IS_SEE_THROUGH]]	0.257
+FRAGMENT minecraft:core/text ShaderDefines[values={}, flags=[]]	0.428
+FRAGMENT minecraft:core/world_border ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ACCUMULATE]]	0.823
+FRAGMENT minecraft:core/world_border ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.357
+FRAGMENT minecraft:core/world_border ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.501
+FRAGMENT minecraft:core/world_border ShaderDefines[values={}, flags=[]]	0.253
+FRAGMENT minecraft:post/bits ShaderDefines[values={}, flags=[]]	0.274
+FRAGMENT minecraft:post/blit ShaderDefines[values={}, flags=[]]	0.200
+FRAGMENT minecraft:post/box_blur ShaderDefines[values={}, flags=[]]	0.313
+FRAGMENT minecraft:post/color_convolve ShaderDefines[values={}, flags=[]]	0.288
+FRAGMENT minecraft:post/entity_outline_box_blur ShaderDefines[values={}, flags=[]]	0.258
+FRAGMENT minecraft:post/entity_sobel ShaderDefines[values={}, flags=[]]	0.329
+FRAGMENT minecraft:post/invert ShaderDefines[values={}, flags=[]]	0.233
+FRAGMENT minecraft:post/spiderclip ShaderDefines[values={}, flags=[]]	0.352
+VERTEX ingot_test:core/early_return ShaderDefines[values={}, flags=[]]	0.251
+VERTEX ingot_test:core/orientation ShaderDefines[values={}, flags=[]]	0.222
+VERTEX ingot_test:core/push_test ShaderDefines[values={}, flags=[]]	0.336
+VERTEX minecraft:core/animate_sprite ShaderDefines[values={}, flags=[]]	0.302
+VERTEX minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.453
+VERTEX minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.401
+VERTEX minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.421
+VERTEX minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[]]	0.416
+VERTEX minecraft:core/block ShaderDefines[values={ALPHA_CUTOUT=0.5}, flags=[]]	0.432
+VERTEX minecraft:core/block ShaderDefines[values={}, flags=[]]	0.435
+VERTEX minecraft:core/clouds ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.594
+VERTEX minecraft:core/clouds ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.549
+VERTEX minecraft:core/clouds ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.552
+VERTEX minecraft:core/clouds ShaderDefines[values={}, flags=[]]	0.558
+VERTEX minecraft:core/debug_point ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.280
+VERTEX minecraft:core/debug_point ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.295
+VERTEX minecraft:core/debug_point ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.265
+VERTEX minecraft:core/debug_point ShaderDefines[values={}, flags=[]]	0.267
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[APPLY_TEXTURE_MATRIX, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ACCUMULATE]]	0.516
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[APPLY_TEXTURE_MATRIX, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.443
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[APPLY_TEXTURE_MATRIX, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.442
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, APPLY_TEXTURE_MATRIX, OIT_ADDITIVE, OIT, OIT_ACCUMULATE]]	0.469
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, APPLY_TEXTURE_MATRIX, OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.521
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, APPLY_TEXTURE_MATRIX, OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.422
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ACCUMULATE]]	0.435
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.431
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.418
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE, PER_FACE_LIGHTING, EMISSIVE]]	0.563
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE, PER_FACE_LIGHTING]]	0.617
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.581
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.576
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.535
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[APPLY_TEXTURE_MATRIX, NO_OVERLAY, NO_CARDINAL_LIGHTING]]	0.478
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING, APPLY_TEXTURE_MATRIX]]	0.447
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[EMISSIVE, PER_FACE_LIGHTING]]	0.564
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[GLINT, NO_OVERLAY, PER_FACE_LIGHTING]]	0.586
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[NO_OVERLAY, PER_FACE_LIGHTING]]	0.651
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[NO_OVERLAY]]	0.573
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[PER_FACE_LIGHTING, DISSOLVE]]	0.569
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[PER_FACE_LIGHTING]]	0.609
+VERTEX minecraft:core/entity ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[]]	0.567
+VERTEX minecraft:core/entity ShaderDefines[values={}, flags=[EMISSIVE, NO_OVERLAY, NO_CARDINAL_LIGHTING]]	0.434
+VERTEX minecraft:core/entity ShaderDefines[values={}, flags=[GLINT]]	0.571
+VERTEX minecraft:core/entity ShaderDefines[values={}, flags=[NO_OVERLAY]]	0.551
+VERTEX minecraft:core/entity ShaderDefines[values={}, flags=[]]	0.558
+VERTEX minecraft:core/glint ShaderDefines[values={}, flags=[]]	0.378
+VERTEX minecraft:core/gui ShaderDefines[values={}, flags=[]]	0.225
+VERTEX minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE, GLINT, GLINT_SPECIAL]]	0.578
+VERTEX minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE, GLINT]]	0.556
+VERTEX minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.590
+VERTEX minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.522
+VERTEX minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.509
+VERTEX minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[GLINT, GLINT_SPECIAL]]	0.582
+VERTEX minecraft:core/item ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[]]	0.760
+VERTEX minecraft:core/panorama ShaderDefines[values={}, flags=[]]	0.235
+VERTEX minecraft:core/particle ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.485
+VERTEX minecraft:core/particle ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.414
+VERTEX minecraft:core/particle ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.429
+VERTEX minecraft:core/particle ShaderDefines[values={}, flags=[]]	0.626
+VERTEX minecraft:core/position ShaderDefines[values={}, flags=[]]	0.450
+VERTEX minecraft:core/position_color ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.271
+VERTEX minecraft:core/position_color ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.323
+VERTEX minecraft:core/position_color ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.248
+VERTEX minecraft:core/position_color ShaderDefines[values={}, flags=[]]	0.258
+VERTEX minecraft:core/position_tex ShaderDefines[values={}, flags=[]]	0.245
+VERTEX minecraft:core/position_tex_color ShaderDefines[values={}, flags=[]]	0.224
+VERTEX minecraft:core/rendertype_beacon_beam ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.285
+VERTEX minecraft:core/rendertype_beacon_beam ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.260
+VERTEX minecraft:core/rendertype_beacon_beam ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.252
+VERTEX minecraft:core/rendertype_beacon_beam ShaderDefines[values={}, flags=[]]	0.262
+VERTEX minecraft:core/rendertype_crumbling ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.405
+VERTEX minecraft:core/rendertype_crumbling ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.388
+VERTEX minecraft:core/rendertype_crumbling ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.384
+VERTEX minecraft:core/rendertype_crumbling ShaderDefines[values={}, flags=[]]	0.371
+VERTEX minecraft:core/rendertype_end_portal ShaderDefines[values={PORTAL_LAYERS=15}, flags=[]]	0.389
+VERTEX minecraft:core/rendertype_end_portal ShaderDefines[values={PORTAL_LAYERS=16}, flags=[]]	0.388
+VERTEX minecraft:core/rendertype_entity_shadow ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.387
+VERTEX minecraft:core/rendertype_entity_shadow ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.420
+VERTEX minecraft:core/rendertype_entity_shadow ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.366
+VERTEX minecraft:core/rendertype_entity_shadow ShaderDefines[values={}, flags=[]]	0.389
+VERTEX minecraft:core/rendertype_leash ShaderDefines[values={}, flags=[]]	0.497
+VERTEX minecraft:core/rendertype_lightning ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ACCUMULATE]]	0.387
+VERTEX minecraft:core/rendertype_lightning ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.631
+VERTEX minecraft:core/rendertype_lightning ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.364
+VERTEX minecraft:core/rendertype_lightning ShaderDefines[values={}, flags=[]]	0.386
+VERTEX minecraft:core/rendertype_lines ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.686
+VERTEX minecraft:core/rendertype_lines ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.509
+VERTEX minecraft:core/rendertype_lines ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.525
+VERTEX minecraft:core/rendertype_lines ShaderDefines[values={}, flags=[]]	0.554
+VERTEX minecraft:core/rendertype_outline ShaderDefines[values={}, flags=[]]	0.326
+VERTEX minecraft:core/rendertype_water_mask ShaderDefines[values={}, flags=[]]	0.227
+VERTEX minecraft:core/screenquad ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT]]	0.230
+VERTEX minecraft:core/screenquad ShaderDefines[values={}, flags=[]]	0.219
+VERTEX minecraft:core/sky ShaderDefines[values={}, flags=[]]	0.390
+VERTEX minecraft:core/stars ShaderDefines[values={}, flags=[]]	0.220
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[MULTIDRAW_TERRAIN, OIT, OIT_ACCUMULATE]]	0.534
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[MULTIDRAW_TERRAIN, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.472
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[MULTIDRAW_TERRAIN, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.493
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.537
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.478
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1, OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.472
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[MULTIDRAW_TERRAIN]]	0.489
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.1}, flags=[]]	0.491
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.5}, flags=[MULTIDRAW_TERRAIN]]	0.506
+VERTEX minecraft:core/terrain ShaderDefines[values={ALPHA_CUTOUT=0.5}, flags=[]]	0.502
+VERTEX minecraft:core/terrain ShaderDefines[values={}, flags=[MULTIDRAW_TERRAIN]]	0.517
+VERTEX minecraft:core/terrain ShaderDefines[values={}, flags=[]]	0.505
+VERTEX minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[IS_GRAYSCALE, OIT, OIT_ACCUMULATE]]	0.447
+VERTEX minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[IS_GRAYSCALE, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.414
+VERTEX minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[IS_GRAYSCALE, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.408
+VERTEX minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ACCUMULATE]]	0.462
+VERTEX minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.427
+VERTEX minecraft:core/text ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.438
+VERTEX minecraft:core/text ShaderDefines[values={}, flags=[IS_GRAYSCALE, IS_SEE_THROUGH]]	0.246
+VERTEX minecraft:core/text ShaderDefines[values={}, flags=[IS_GRAYSCALE]]	0.408
+VERTEX minecraft:core/text ShaderDefines[values={}, flags=[IS_GUI, IS_GRAYSCALE]]	0.250
+VERTEX minecraft:core/text ShaderDefines[values={}, flags=[IS_GUI]]	0.258
+VERTEX minecraft:core/text ShaderDefines[values={}, flags=[IS_SEE_THROUGH]]	0.240
+VERTEX minecraft:core/text ShaderDefines[values={}, flags=[]]	0.414
+VERTEX minecraft:core/world_border ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ACCUMULATE]]	0.312
+VERTEX minecraft:core/world_border ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_DEPTH_BOUNDS]]	0.255
+VERTEX minecraft:core/world_border ShaderDefines[values={OIT_WAVELET_RANK=2, OIT_COEFF_COUNT=8, OIT_COEFF_ATTACHMENT_COUNT=2}, flags=[OIT_ADDITIVE, OIT, OIT_ALPHA_ONLY, OIT_TRANSMITTANCE]]	0.263
+VERTEX minecraft:core/world_border ShaderDefines[values={}, flags=[]]	0.258
+VERTEX minecraft:post/rotscale ShaderDefines[values={}, flags=[]]	0.273

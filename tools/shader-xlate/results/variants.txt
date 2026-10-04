@@ -1,0 +1,60 @@
+msl24-compact                translated=220/220 uniqueMsl=171 libFail=0 psoOk=220 psoFail=0 spvcMs=106.456 wallMs=621.459
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl24-compact-mt             translated=220/220 uniqueMsl=171 libFail=0 psoOk=220 psoFail=0 spvcMs=290.545 wallMs=244.334
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl30-compact                translated=220/220 uniqueMsl=171 libFail=0 psoOk=220 psoFail=0 spvcMs=113.472 wallMs=639.644
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl24-identity               translated=220/220 uniqueMsl=175 libFail=0 psoOk=220 psoFail=0 spvcMs=110.287 wallMs=626.497
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl24-decoration             translated=220/220 uniqueMsl=175 libFail=0 psoOk=220 psoFail=0 spvcMs=113.120 wallMs=666.233
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl24-noexplicitdepth        translated=220/220 uniqueMsl=171 libFail=0 psoOk=220 psoFail=0 spvcMs=109.978 wallMs=646.403
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl24-notbnative             translated=220/220 uniqueMsl=171 libFail=0 psoOk=220 psoFail=0 spvcMs=109.321 wallMs=634.791
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl24-nopad                  translated=220/220 uniqueMsl=171 libFail=0 psoOk=220 psoFail=0 spvcMs=112.393 wallMs=671.699
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl24-noflip                 translated=220/220 uniqueMsl=171 libFail=0 psoOk=220 psoFail=0 spvcMs=113.300 wallMs=643.511
+      => FAIL
+      => FAIL: not culled
+      => FAIL
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (0,0,0,255), expected (128,64,32,255) everywhere: FAIL
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS
+msl24-nozeroinit             translated=220/220 uniqueMsl=171 libFail=0 psoOk=220 psoFail=0 spvcMs=120.051 wallMs=697.968
+      => PASS: GL memory layout, gl_FragCoord == GL, depth 0..1, gl_FrontFacing true, texture v=0 == first row
+      => PASS: culled (GL-CCW front faces are Metal-Clockwise after the flip)
+      => PASS: with the wrong winding the same triangle reports gl_FrontFacing == false
+    bindings test (minimum linear texture alignment RGBA32Float = 16): pixel[0] = (128,64,32,255), expected (128,64,32,255) everywhere: PASS
+    depth blit test: depth[0] = 0.375000, expected 0.375 everywhere: PASS

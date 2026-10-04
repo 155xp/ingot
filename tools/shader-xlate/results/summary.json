@@ -1,0 +1,13 @@
+{
+  "options": "Options[mslVersion=20400, flipVertexY=true, bindingMode=COMPACT, useDecorationBinding=false, textureBufferNative=true, padFragmentOutputs=true, pointSizeBuiltin=true, forceZeroInit=true]",
+  "explicitDepth": true,
+  "threads": 1,
+  "frontendPlusSpvcWallMs": "621.459",
+  "pipelines": 220,
+  "translated": 220,
+  "failed": 0,
+  "uniqueMslFiles": 171,
+  "uniqueShadercStages": 255,
+  "shadercTotalMs": "129.820",
+  "spvcTotalMs": "106.456"
+}

@@ -38,3 +38,10 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# tools: downloaded jars and experiment outputs
+tools/shader-xlate/lib/
+tools/shader-xlate/build/
+tools/shader-xlate/out/
+tools/shader-xlate/logs/
+tools/shader-xlate/metalcheck/*.bin

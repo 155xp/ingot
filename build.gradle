@@ -108,3 +108,58 @@ jar {
 		rename { "${it}_$projectName" }
 	}
 }
+
+// ---- Benchmark harness ----
+// src/bench is a separate mod ("ingot-bench", fabricloader + minecraft only) that loads a prepared world, drives a
+// scripted camera path and writes frame-time statistics. It is only on the classpath of the "bench" run
+// (./gradlew runBench) and never ends up in the ingot jar. bench/run.sh drives everything; see bench/README.md.
+//   -Pbench.runDir=run/bench/<config>   game directory for the run (relative to the project)
+//   -Pbench.sysprops=<file>             .properties file; every entry becomes -D<key>=<value> (ingot.*, ingot.bench.*)
+//   -Pbench.width=1280 -Pbench.height=720   logical window size (the Retina framebuffer is 2x)
+//   -Pbench.withIngot=false             leave the ingot mod off the classpath entirely (only for when src/main does not
+//                                       build; the vanilla/mainstream configs normally run with Ingot present but disabled)
+def benchProp = { String key, String fallback -> (project.findProperty("bench.${key}") ?: fallback).toString() }
+
+sourceSets {
+	bench {
+		// The harness never references Ingot classes, so it compiles on its own; Ingot is only added at runtime.
+		if (benchProp("withIngot", "true").toBoolean()) {
+			runtimeClasspath += sourceSets.main.output
+		}
+	}
+}
+
+configurations {
+	benchCompileClasspath.extendsFrom compileClasspath
+	benchRuntimeClasspath.extendsFrom runtimeClasspath
+}
+
+loom {
+	mods {
+		"ingot-bench" {
+			sourceSet sourceSets.bench
+		}
+	}
+
+	runs {
+		bench {
+			client()
+			configName = "Ingot Benchmark"
+			ideConfigGenerated false
+			source sourceSets.bench
+			runDir benchProp("runDir", "run/bench/manual")
+			programArgs "--width", benchProp("width", "1280"), "--height", benchProp("height", "720"),
+				"--username", "IngotBench", "--uuid", "1b3e5a7c-0000-4000-8000-000000be0c11"
+			// Identical for every configuration: the vanilla launcher's default JVM flags for 26.3 (-Xmx4G, ZGC).
+			vmArgs "-Xms2G", "-Xmx4G", "-XX:+UseCompactObjectHeaders", "-XX:+AlwaysPreTouch",
+				"-XX:+UseStringDeduplication", "-XX:+UseZGC"
+			def sysprops = project.findProperty("bench.sysprops")
+			if (sysprops != null) {
+				def props = new Properties()
+				file(sysprops.toString()).withInputStream { props.load(it) }
+				props.stringPropertyNames().sort().each { vmArg "-D${it}=${props.getProperty(it)}" }
+			}
+		}
+	}
+}
+// ---- end benchmark harness ----
