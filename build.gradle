@@ -61,7 +61,10 @@ tasks.register("compileNative", Exec) {
 		"-O2", "-g",
 		"-Wall", "-Wextra", "-Wno-unused-parameter", "-Werror=implicit-function-declaration",
 		"-I", nativeSrcDir.dir("include").asFile.absolutePath,
-		"-framework", "Foundation", "-framework", "Metal", "-framework", "QuartzCore",
+		// CoreGraphics must be linked for MTLCreateSystemDefaultDevice; AppKit for window occlusion and refresh rate;
+		// IOKit for the power source.
+		"-framework", "Foundation", "-framework", "Metal", "-framework", "QuartzCore", "-framework", "CoreGraphics",
+		"-framework", "AppKit", "-framework", "IOKit",
 		"-o", outFile.absolutePath] + sources.collect { it.absolutePath })
 }
 

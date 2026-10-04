@@ -70,7 +70,7 @@ public final class Mtl {
 		}
 	}
 
-	private static final MethodHandle H_RELEASE = link("ingot_release", FunctionDescriptor.ofVoid(JAVA_LONG), true);
+	private static final MethodHandle H_RELEASE = link("ingot_release", FunctionDescriptor.ofVoid(JAVA_LONG), false);
 
 	public static void release(long handle) {
 		try {

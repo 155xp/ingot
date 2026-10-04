@@ -4,8 +4,10 @@
 // (python3 tools/gen_bindings.py). Keep declarations on the simple form the generator parses:
 //   INGOT_EXPORT <type> ingot_<name>(<type> <param>, ...);
 // Allowed types: void, (u)int8/16/32/64_t, float, double, and pointers (passed as Java long).
-// A declaration preceded by a line containing INGOT_HOT is linked with Linker.Option.critical(false):
-// it must not block, must not allocate autoreleased objects, and must not call back into Java.
+// A declaration preceded by a line holding only the hot-path marker macro (defined empty below) is linked with
+// Linker.Option.critical(false): it must not block, must not allocate autoreleased objects, and must not call back
+// into Java. The generator treats every non-#define line that spells the marker's name as a marker for the next
+// declaration it finds (even one named inside a comment), so comments refer to it only as "the hot-path marker".
 //
 // Conventions (see docs/ARCHITECTURE.md):
 // * Object handles are retained Objective-C pointers. Java releases them with ingot_release().
@@ -65,7 +67,7 @@ INGOT_EXPORT const char *ingot_device_name(void *device);
 #define INGOT_QUERY_LOW_POWER               8u
 #define INGOT_QUERY_REMOVABLE               9u
 #define INGOT_QUERY_MAX_ANISOTROPY          10u  // 16
-#define INGOT_QUERY_BUFFER_OFFSET_ALIGNMENT 11u  // required alignment for constant buffer offsets (256 on macOS)
+#define INGOT_QUERY_BUFFER_OFFSET_ALIGNMENT 11u  // constant buffer offset alignment: 4 (Apple GPUs), 256 (Mac2-only)
 #define INGOT_QUERY_CURRENT_ALLOCATED_SIZE  12u  // currentAllocatedSize in bytes
 #define INGOT_QUERY_ARCH_ARM64              13u  // 1 if this process runs natively on arm64
 INGOT_EXPORT uint64_t ingot_device_query(void *device, uint32_t key);
@@ -86,7 +88,8 @@ INGOT_EXPORT int32_t ingot_device_wait_serial(void *device, uint64_t serial, int
 INGOT_EXPORT uint32_t ingot_device_error_code(void *device);
 INGOT_EXPORT const char *ingot_device_error_message(void *device);
 
-// GPU execution window of a completed serial, in host-time nanoseconds (same clock as System.nanoTime()).
+// GPU execution window of a completed serial, in host-time nanoseconds (same clock as System.nanoTime() and
+// ingot_now_ns()).
 // Writes {gpuStartNs, gpuEndNs} to out (2 x int64) and returns 1, or returns 0 if the serial is unknown or
 // too old (the device keeps the last 256 serials).
 INGOT_EXPORT int32_t ingot_device_serial_times(void *device, uint64_t serial, void *out);
@@ -96,6 +99,7 @@ INGOT_EXPORT int32_t ingot_device_serial_times(void *device, uint64_t serial, vo
 // ---------------------------------------------------------------------------------------------------------------
 
 // MTLBuffer with the given MTLResourceOptions. data may be null (contents are then zeroed by Metal).
+// Fails (0 + error) when length is 0 or above INGOT_QUERY_MAX_BUFFER_LENGTH, or when Metal is out of memory.
 INGOT_EXPORT void *ingot_buffer_create(void *device, uint64_t length, uint32_t resource_options, const void *data, const char *label);
 
 // CPU address of a shared/managed buffer's storage (null for private buffers).
@@ -106,6 +110,7 @@ INGOT_EXPORT void *ingot_buffer_contents(void *buffer);
 INGOT_EXPORT void ingot_buffer_did_modify_range(void *buffer, uint64_t offset, uint64_t length);
 
 // texture_type: MTLTextureType2D or MTLTextureTypeCube. array_length is 1 (cube faces are implied by the type).
+// Fails (0 + error) when a dimension is 0 or above INGOT_QUERY_MAX_TEXTURE_SIZE, or when Metal is out of memory.
 INGOT_EXPORT void *ingot_texture_create(void *device, uint32_t texture_type, uint32_t pixel_format, uint32_t width, uint32_t height,
                                         uint32_t mip_levels, uint32_t usage, uint32_t storage_mode, const char *label);
 
@@ -222,6 +227,7 @@ INGOT_EXPORT void ingot_blit_copy_texture(void *blit, void *src, uint32_t src_sl
                                           void *dst, uint32_t dst_slice, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y,
                                           uint32_t width, uint32_t height);
 
+// Fills [offset, offset + length) with the byte `value` (0..255; fillBuffer:range:value: has no wider pattern).
 INGOT_EXPORT void ingot_blit_fill_buffer(void *blit, void *buffer, uint64_t offset, uint64_t length, uint32_t value);
 
 // Managed storage only: makes GPU writes visible to the CPU after the command buffer completes.
@@ -344,7 +350,8 @@ INGOT_EXPORT void ingot_render_pop_debug_group(void *encoder);
 // ---------------------------------------------------------------------------------------------------------------
 
 // Clears a rectangle of a color and/or depth attachment (either may be null) by drawing a scissored quad.
-// flags: bit 0 = clear color, bit 1 = clear depth.
+// flags: bit 0 = clear color, bit 1 = clear depth. Only the attachments being cleared are bound; the rectangle is
+// clipped to the mip level. The color texture must have a normalized or float format.
 INGOT_EXPORT void ingot_util_clear_region(void *device, void *cmd, void *color_texture, void *depth_texture, uint32_t level,
                                           uint32_t x, uint32_t y, uint32_t width, uint32_t height,
                                           float r, float g, float b, float a, float depth, uint32_t flags);
@@ -365,9 +372,10 @@ INGOT_EXPORT void ingot_surface_configure(void *surface, uint32_t width, uint32_
 // [layer nextDrawable] as a retained handle, or 0 if none became available within ~1 s (allowsNextDrawableTimeout).
 INGOT_EXPORT void *ingot_surface_next_drawable(void *surface);
 
-// Encodes a render pass on cmd that draws src_texture (any float-readable color format) into the drawable 1:1,
-// anchored top-left, flipping vertically when flip_y != 0 (Ingot renders in OpenGL row order), then schedules
-// presentDrawable: on cmd. Pixels outside the source are cleared to black.
+// Encodes a render pass on cmd that draws src_texture (any float-readable color format, MTLTextureUsageShaderRead)
+// into the drawable 1:1, anchored top-left, then schedules presentDrawable: on cmd. The copied size is
+// min(source, drawable) per axis; with flip_y != 0 its rows are reversed (source row h - 1 on the top row, like the
+// Vulkan presenter), since Ingot renders in OpenGL row order. Pixels outside the copy are cleared to black.
 INGOT_EXPORT void ingot_surface_blit(void *surface, void *cmd, void *drawable, void *src_texture, uint32_t src_width,
                                      uint32_t src_height, uint32_t flip_y);
 
@@ -376,7 +384,8 @@ INGOT_EXPORT void ingot_surface_blit(void *surface, void *cmd, void *drawable, v
 // ---------------------------------------------------------------------------------------------------------------
 
 // 1 if the window that hosts the surface's layer is at least partly visible (NSWindowOcclusionStateVisible),
-// 0 if it is fully covered, on another Space, or the display is asleep. Main thread only.
+// 0 if it is fully covered, minimized, on another Space, or the display is asleep. 1 if the layer is in no window.
+// Main thread only.
 INGOT_EXPORT int32_t ingot_surface_visible(void *surface);
 
 // maximumFramesPerSecond of the screen currently showing the surface's window (60 if unknown). Main thread only.
@@ -387,11 +396,13 @@ INGOT_EXPORT int32_t ingot_surface_max_refresh_rate(void *surface);
 // bits 8..15: NSProcessInfo.thermalState (0 nominal, 1 fair, 2 serious, 3 critical)
 INGOT_EXPORT uint32_t ingot_power_state(void);
 
-// Sleeps the calling thread until System.nanoTime() >= deadline_ns using mach_wait_until (no spinning).
-// Returns immediately if the deadline has passed.
+// Sleeps the calling thread until System.nanoTime() >= deadline_ns (no spinning) on an absolute kqueue timer that is
+// exempt from timer coalescing (NOTE_CRITICAL), falling back to mach_wait_until. Never returns early; typically wakes
+// within ~25-50 us of the deadline. Returns immediately if the deadline has passed.
 INGOT_EXPORT void ingot_wait_until(int64_t deadline_ns);
 
-// Current host time in the System.nanoTime() clock domain (mach_continuous/absolute time in ns).
+// Current host time in the System.nanoTime() clock domain: mach_absolute_time() * numer / denom, which is exactly how
+// the JVM computes nanoTime on macOS (not mach_continuous_time, which also counts sleep).
 INGOT_HOT
 INGOT_EXPORT int64_t ingot_now_ns(void);
 
