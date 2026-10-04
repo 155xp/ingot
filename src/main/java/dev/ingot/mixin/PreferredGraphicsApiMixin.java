@@ -1,8 +1,10 @@
 package dev.ingot.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.mojang.renderpearl.api.device.GpuBackend;
 import dev.ingot.backend.MetalBackend;
 import net.minecraft.client.PreferredGraphicsApi;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -24,5 +26,12 @@ abstract class PreferredGraphicsApiMixin {
 		withMetal[0] = new MetalBackend();
 		System.arraycopy(vanilla, 0, withMetal, 1, vanilla.length);
 		cir.setReturnValue(withMetal);
+	}
+
+	/** Video Settings shows "Default (Metal)" so users can tell which backend Default means. Optional. */
+	@ModifyReturnValue(method = "caption", at = @At("RETURN"), require = 0)
+	private Component ingot$captionMetal(Component caption) {
+		// The vanilla caption stays translated; "Metal" is a name.
+		return MetalBackend.shouldTry((PreferredGraphicsApi) (Object) this) ? caption.copy().append(" (Metal)") : caption;
 	}
 }

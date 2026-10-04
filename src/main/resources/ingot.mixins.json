@@ -1,8 +1,12 @@
 {
 	"required": true,
 	"package": "dev.ingot.mixin",
+	"plugin": "dev.ingot.mixin.IngotMixinPlugin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"FramerateLimiterMixin",
+		"FramerateLimitTrackerMixin",
+		"MinecraftMixin",
 		"PreferredGraphicsApiMixin"
 	],
 	"injectors": {
