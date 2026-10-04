@@ -60,13 +60,24 @@ public final class MetalBackend implements GpuBackend {
 
 	@Override
 	public GpuDevice createDevice(GpuDebugOptions debugOptions) throws BackendCreationException {
+		MetalDevice metalDevice = null;
 		try {
-			GpuDevice device = new FrontendGpuDevice(new MetalDevice(this, debugOptions));
+			metalDevice = new MetalDevice(this, debugOptions);
+			GpuDevice device = new FrontendGpuDevice(metalDevice);
 			Ingot.LOGGER.info("Ingot: Metal backend active");
 			return device;
 		} catch (BackendCreationException e) {
 			throw e;
 		} catch (Throwable t) {
+			// The frontend can fail after the native device exists (encoder, shader compilers); do not keep it alive
+			// next to the backend the game falls back to.
+			if (metalDevice != null) {
+				try {
+					metalDevice.close();
+				} catch (Throwable closeFailure) {
+					t.addSuppressed(closeFailure);
+				}
+			}
 			Ingot.LOGGER.error("Ingot: Metal device creation failed, falling back", t);
 			throw new BackendCreationException("Metal device creation failed: " + t, BackendCreationException.Reason.PLATFORM_ERROR);
 		}
