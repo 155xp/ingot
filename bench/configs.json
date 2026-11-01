@@ -98,5 +98,14 @@
 		"benchProps": {
 			"debugOverlay": "true"
 		}
+	},
+	"vanilla-shots": {
+		"description": "Vanilla with the F3 overlay shown while measuring: for screenshots only, not for numbers",
+		"ingot": false,
+		"mods": [],
+		"rejectBackend": "metal",
+		"benchProps": {
+			"debugOverlay": "true"
+		}
 	}
 }

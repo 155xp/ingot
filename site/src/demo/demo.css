@@ -110,10 +110,10 @@
   box-shadow: 0 0 0 2px #fff, inset 0 2px 0 rgb(255 255 255 / 0.22), inset 0 -3px 0 rgb(0 0 0 / 0.32);
 }
 
-.pd-pair {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+.pd-btn--done {
+  justify-self: center;
+  width: 60%;
+  margin-top: 6px;
 }
 
 /* Narrow: the panel on top, the game under it running off the right, so the F3 lines stay whole */
@@ -128,10 +128,6 @@
   top: 16px;
   left: 16px;
   width: 326px;
-}
-
-.pd .ss-stage[data-layout='compact'] .pd-pair .pd-btn {
-  font-size: 11px;
 }
 
 /* Only filler may run off an edge: the GPU lines would be cut, so the narrow window keeps the frame-rate line alone */

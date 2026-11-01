@@ -165,14 +165,28 @@ h2 {
   margin: 0 0 24px;
 }
 
-.shots__strips {
+.versus {
   display: grid;
-  justify-items: start;
-  gap: 12px;
+  grid-template-columns: max-content minmax(0, 560px);
+  align-items: center;
+  gap: 16px 32px;
+  margin: 0;
+}
+
+.versus dt {
+  color: var(--muted);
+}
+
+.versus dt:nth-of-type(2) {
+  color: var(--accent);
+}
+
+.versus dd {
+  margin: 0;
 }
 
 /* Native size, scaled by whole pixels on Retina: Minecraft's text stays crisp */
-.shots__strips img {
+.versus img {
   display: block;
   max-width: 100%;
   height: auto;
@@ -209,12 +223,13 @@ h2 {
 .numbers__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 12px;
+  gap: 56px 40px;
+  margin-top: 8px;
 }
 
 .source {
   max-width: 90ch;
-  margin: 16px 0 0;
+  margin: 48px 0 0;
   color: var(--muted);
   font-size: 12px;
 }
@@ -303,6 +318,15 @@ h2 {
   .numbers,
   .install {
     padding-top: 88px;
+  }
+
+  .versus {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .versus dd + dt {
+    margin-top: 16px;
   }
 
 }

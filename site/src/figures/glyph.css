@@ -4,10 +4,6 @@
   --gk-data: var(--accent);
   margin: 0;
   min-width: 0;
-  padding: 20px 20px 18px;
-  border-radius: 8px;
-  background: #121211;
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .gk figcaption {
@@ -47,7 +43,8 @@
 .gk-figure .gk-d,
 .gk-figure .gk-m { -webkit-text-stroke: 0.5px currentColor; }
 .gk-d { color: var(--gk-data); }
-.gk-e { color: var(--gk-data); opacity: 0.45; }
+/* ░, the empty part of a column's scale: a quiet neutral dither */
+.gk-e { color: #3b3a36; }
 /* Receded series: an opaque gray (ink at about a third), since opacity double-blends where a column's rows meet */
 .gk-m { color: #53524e; }
 .gk-f { color: var(--muted); }

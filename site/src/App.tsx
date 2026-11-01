@@ -32,16 +32,22 @@ export default function App() {
           </div>
         </section>
 
-        <section className="demo" aria-label="Switching Ingot from Performance to Battery mode">
+        <section className="demo" aria-label="Switching Ingot from Battery to Performance mode">
           <PowerDemo />
         </section>
 
         <section className="shots">
-          <p className="line">Straight from the game with F3 open, at 2560 × 1440 on an M4 Pro.</p>
-          <div className="shots__strips">
-            <img src="/shots/f3-lake-fps.png" width={560} height={126} loading="lazy" alt="Minecraft's F3 screen: 586 fps T: inf (immediate) @120Hz" />
-            <img src="/shots/f3-plains-fps.png" width={560} height={126} loading="lazy" alt="Minecraft's F3 screen: 775 fps T: inf (immediate) @120Hz" />
-          </div>
+          <p className="line">The same spot, F3 open, uncapped, at 2560 × 1440 on an M4 Pro.</p>
+          <dl className="versus">
+            <dt>Without Ingot</dt>
+            <dd>
+              <img src="/shots/f3-vanilla-fps.png" width={560} height={126} loading="lazy" alt="Vanilla Minecraft's F3 screen: 115 fps T: inf (immediate) @120Hz" />
+            </dd>
+            <dt>With Ingot</dt>
+            <dd>
+              <img src="/shots/f3-ingot-fps.png" width={560} height={126} loading="lazy" alt="Minecraft with Ingot, F3 screen: 473 fps T: inf (immediate) @120Hz" />
+            </dd>
+          </dl>
         </section>
 
         <section className="numbers">
