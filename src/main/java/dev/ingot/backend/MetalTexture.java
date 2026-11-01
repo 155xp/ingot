@@ -1,7 +1,7 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.backend.common.BaseGpuTexture;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.textures.GpuTexture;
 
 /**
  * An MTLTexture (2D or cube, Private storage). Owner: core.
@@ -10,7 +10,7 @@ import com.mojang.renderpearl.backend.common.BaseGpuTexture;
  * Vulkan's: the texture holds one reference, every view one more, and the handle is released (deferred until the GPU
  * is done) when the last of them closes.
  */
-public class MetalTexture extends BaseGpuTexture {
+public class MetalTexture extends GpuTexture {
 	final MetalDevice device;
 	private final long handle;
 	private final int pixelFormat;

@@ -2,10 +2,9 @@ package dev.ingot.bench;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.systems.DeviceInfo;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.device.DeviceInfo;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
@@ -82,7 +81,7 @@ final class EnvInfo {
 		o.addProperty("framebufferHeight", window.getHeight());
 		o.addProperty("windowWidth", window.getScreenWidth());
 		o.addProperty("windowHeight", window.getScreenHeight());
-		o.addProperty("pixelDensity", window.getPixelDensity());
+		o.addProperty("pixelDensity", window.getScreenWidth() > 0 ? (float) window.getWidth() / window.getScreenWidth() : 1.0F);
 		o.addProperty("guiScale", window.getGuiScale());
 		o.addProperty("fullscreen", minecraft.options.fullscreen().get());
 		o.addProperty("refreshRate", refreshRate(minecraft));
@@ -98,8 +97,8 @@ final class EnvInfo {
 	/** Refresh rate in Hz of the display that shows the window (120 on a ProMotion panel), or -1 if unknown. */
 	static int refreshRate(Minecraft minecraft) {
 		try {
-			VideoMode mode = minecraft.getWindow().getActiveVideoMode();
-			return mode != null && mode.getRefreshRate() >= 1.0F ? Math.round(mode.getRefreshRate()) : -1;
+			int rate = minecraft.getWindow().getRefreshRate();
+			return rate >= 1 ? rate : -1;
 		} catch (RuntimeException e) {
 			return -1;
 		}

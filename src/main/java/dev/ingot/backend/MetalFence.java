@@ -1,6 +1,6 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.commands.GpuFence;
+import com.mojang.blaze3d.buffers.GpuFence;
 
 /**
  * Completes when the command buffer serial captured at creation completes. Owner: core. Holds no native object:

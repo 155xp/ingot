@@ -1,7 +1,7 @@
 package dev.ingot.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.mojang.renderpearl.api.device.GpuBackend;
+import com.mojang.blaze3d.systems.GpuBackend;
 import dev.ingot.backend.MetalBackend;
 import net.minecraft.client.PreferredGraphicsApi;
 import net.minecraft.network.chat.Component;

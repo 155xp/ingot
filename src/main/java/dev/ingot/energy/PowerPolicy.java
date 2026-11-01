@@ -1,6 +1,5 @@
 package dev.ingot.energy;
 
-import com.mojang.blaze3d.platform.VideoMode;
 import dev.ingot.Ingot;
 import dev.ingot.IngotConfig;
 import dev.ingot.backend.MetalSurface;
@@ -121,13 +120,13 @@ public final class PowerPolicy {
 		if (surface != null) {
 			return surface.maxRefreshRate();
 		}
-		// Another backend is active: ask SDL for the mode of the display that shows the window.
+		// Another backend is active: ask GLFW for the mode of the window's monitor (the primary one when windowed).
 		long now = System.nanoTime();
 		if (now - nextRefreshRateQuery >= 0L) {
 			nextRefreshRateQuery = now + SECOND_NS;
-			VideoMode mode = Minecraft.getInstance().getWindow().getActiveVideoMode();
-			if (mode != null && mode.getRefreshRate() >= 1.0F) {
-				windowRefreshRate = Math.round(mode.getRefreshRate());
+			int rate = Minecraft.getInstance().getWindow().getRefreshRate();
+			if (rate >= 1) {
+				windowRefreshRate = rate;
 			}
 		}
 		return windowRefreshRate;

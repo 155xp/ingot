@@ -371,8 +371,13 @@ INGOT_EXPORT void ingot_util_clear_region(void *device, void *cmd, void *color_t
 // Surface (CAMetalLayer)
 // ---------------------------------------------------------------------------------------------------------------
 
-// Takes a CAMetalLayer* (from SDL_Metal_GetLayer; Java sets SDL_VIDEO_METAL_AUTO_RESIZE_DRAWABLE=0 before creating the
-// view) and configures it for the device: BGRA8Unorm, framebufferOnly, opaque, presentsWithTransaction = NO.
+// Makes an NSView* (GLFW's content view, from glfwGetCocoaView) host a CAMetalLayer, as GLFW does for Vulkan surfaces,
+// and returns the layer (owned by the view, not retained; the view's existing CAMetalLayer if it already hosts one).
+// 0 and ingot_last_error() if ns_view is not an NSView. Main thread only.
+INGOT_EXPORT void *ingot_view_metal_layer(void *ns_view);
+
+// Takes a CAMetalLayer* (from ingot_view_metal_layer) and configures it for the device: BGRA8Unorm, framebufferOnly,
+// opaque, presentsWithTransaction = NO.
 INGOT_EXPORT void *ingot_surface_create(void *device, void *metal_layer);
 INGOT_EXPORT void ingot_surface_destroy(void *surface);
 

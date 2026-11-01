@@ -1,16 +1,16 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.buffers.TransientMemory;
-import com.mojang.renderpearl.api.commands.GpuFence;
-import com.mojang.renderpearl.api.commands.GpuQueryPool;
-import com.mojang.renderpearl.api.commands.RenderPass;
-import com.mojang.renderpearl.api.commands.RenderPassDescriptor;
-import com.mojang.renderpearl.api.textures.GpuTexture;
-import com.mojang.renderpearl.backend.api.CommandEncoderBackend;
-import com.mojang.renderpearl.backend.api.RenderPassBackend;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.buffers.GpuFence;
+import com.mojang.blaze3d.systems.CommandEncoderBackend;
+import com.mojang.blaze3d.systems.GpuQueryPool;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderPassBackend;
+import com.mojang.blaze3d.systems.RenderPassDescriptor;
+import com.mojang.blaze3d.systems.TransientMemory;
+import com.mojang.blaze3d.textures.GpuTexture;
 import dev.ingot.nativ.Mtl;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -184,7 +184,7 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 			width = depth.textureView().getWidth(0);
 			height = depth.textureView().getHeight(0);
 		}
-		RenderPass.RenderArea area = descriptor.renderArea();
+		RenderPass.RenderArea area = descriptor.renderArea;
 		// Load-action clears cover whole attachments, so they are only usable when the render area does too.
 		boolean fullArea = area.x() == 0 && area.y() == 0 && area.width() == width && area.height() == height;
 
@@ -517,11 +517,11 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 
 	@Override
 	public void clearColorAndDepthTextures(GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth,
-										   int regionX, int regionY, int regionWidth, int regionHeight, int mipLevel) {
+										   int regionX, int regionY, int regionWidth, int regionHeight) {
 		MetalTexture color = (MetalTexture) colorTexture;
 		MetalTexture depth = (MetalTexture) depthTexture;
-		int width = color.getWidth(mipLevel);
-		int height = color.getHeight(mipLevel);
+		int width = color.getWidth(0);
+		int height = color.getHeight(0);
 		if (regionX == 0 && regionY == 0 && regionWidth == width && regionHeight == height && color.getMipLevels() == 1
 			&& depth.getWidth(0) == width && depth.getHeight(0) == height) {
 			// Covers both single-mip textures entirely: an ordinary (foldable) clear.
@@ -531,7 +531,7 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		this.flushPendingClear(color);
 		this.flushPendingClear(depth);
 		this.endBlit();
-		Mtl.utilClearRegion(this.deviceHandle, this.commandBuffer(), color.handle(), depth.handle(), mipLevel, regionX, regionY, regionWidth,
+		Mtl.utilClearRegion(this.deviceHandle, this.commandBuffer(), color.handle(), depth.handle(), 0, regionX, regionY, regionWidth,
 			regionHeight, clearColor.x(), clearColor.y(), clearColor.z(), clearColor.w(), (float) clearDepth, CLEAR_REGION_COLOR | CLEAR_REGION_DEPTH);
 	}
 

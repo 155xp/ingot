@@ -1,12 +1,13 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.pipeline.BlendEquation;
-import com.mojang.renderpearl.api.pipeline.BlendFactor;
-import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.BlendOp;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.ShaderType;
-import com.mojang.renderpearl.backend.api.BackendRenderPipeline;
+import com.mojang.blaze3d.pipeline.BlendEquation;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.BlendFactor;
+import com.mojang.blaze3d.platform.BlendOp;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import dev.ingot.Ingot;
 import dev.ingot.nativ.Mtl;
 import dev.ingot.shader.SpirvToMsl;
@@ -17,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,10 +28,9 @@ import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
 
 /**
- * GpuDeviceBackend.compilePipeline for Metal. Runs on worker threads, concurrently: SPIR-V → MSL, per-stage
- * MTLLibrary (cached by MSL hash), default PSO (with and without D32 for depth-less pipelines, like Vulkan's pair).
- * Must finish all SPIR-V access before returning (the frontend frees the modules after finishCompile). Failures log
- * and yield Pending.NULL. Owner: pipelines.
+ * Builds a MetalRenderPipeline from a RenderPipeline and its rebound SPIR-V (MetalPipelineCache): SPIR-V → MSL,
+ * per-stage MTLLibrary (cached by MSL hash), default PSO (with and without D32 for depth-less pipelines, like Vulkan's
+ * pair). Thread-safe. Failures log and yield null. Owner: pipelines.
  */
 public final class MetalPipelineCompiler {
 	// IngotPipelineDesc (native/include/ingot.h, which _Static_asserts the same offsets).
@@ -47,7 +48,10 @@ public final class MetalPipelineCompiler {
 	private static final long ATTRIBUTE_SIZE = 16;        // format, offset, buffer_index, _pad
 	private static final long LAYOUT_SIZE = 16;           // stride, step_function, step_rate, _pad
 	private static final long COLOR_SIZE = 40;            // pixel_format, blend_enabled, rgb_op, alpha_op, src_rgb, dst_rgb, src_alpha, dst_alpha, write_mask, _pad
-	private static final int MAX_VERTEX_BUFFERS = 16;     // renderpearl vertex buffer slots
+	private static final int MAX_VERTEX_BUFFERS = 16;     // RenderPass vertex buffer slots
+
+	/** GLSL entry point of every stage. */
+	private static final String ENTRY_POINT = "main";
 
 	/** MTLLibrary caches, one per device, alive until {@link #releaseLibraries}. */
 	private static final ConcurrentHashMap<MetalDevice, LibraryCache> LIBRARIES = new ConcurrentHashMap<>();
@@ -55,17 +59,20 @@ public final class MetalPipelineCompiler {
 	private MetalPipelineCompiler() {
 	}
 
-	/** CONTRACT */
-	public static BackendRenderPipeline.Pending compile(MetalDevice device, BackendRenderPipeline.CreateInfo createInfo) {
+	/**
+	 * The pipeline, or null if it cannot be built (logged). {@code bindings} is the list the SPIR-V modules were rebound
+	 * to: binding i of descriptor set 0 is bindings[i]. Reads the modules without consuming them. CONTRACT
+	 */
+	public static @Nullable MetalRenderPipeline compile(MetalDevice device, RenderPipeline renderPipeline, ByteBuffer vertexSpirv,
+														ByteBuffer fragmentSpirv, List<SpirvToMsl.Binding> bindings) {
 		try {
-			MetalRenderPipeline pipeline = build(device, createInfo);
-			return () -> pipeline;
+			return build(device, renderPipeline, vertexSpirv, fragmentSpirv, bindings);
 		} catch (PipelineException | SpirvToMsl.TranslationException e) {
-			Ingot.LOGGER.error("Ingot: cannot compile pipeline {}: {}", createInfo.name(), e.getMessage());
+			Ingot.LOGGER.error("Ingot: cannot compile pipeline {}: {}", renderPipeline.getLocation(), e.getMessage());
 		} catch (Throwable t) {
-			Ingot.LOGGER.error("Ingot: cannot compile pipeline {}", createInfo.name(), t);
+			Ingot.LOGGER.error("Ingot: cannot compile pipeline {}", renderPipeline.getLocation(), t);
 		}
-		return BackendRenderPipeline.Pending.NULL;
+		return null;
 	}
 
 	/**
@@ -79,53 +86,37 @@ public final class MetalPipelineCompiler {
 		}
 	}
 
-	private static MetalRenderPipeline build(MetalDevice device, BackendRenderPipeline.CreateInfo createInfo)
-		throws PipelineException, SpirvToMsl.TranslationException {
-		BackendRenderPipeline.CreateInfo.Shader vertexShader = null;
-		BackendRenderPipeline.CreateInfo.Shader fragmentShader = null;
-		for (BackendRenderPipeline.CreateInfo.Shader shader : createInfo.shaders()) {
-			if (shader.module().type() == ShaderType.VERTEX) {
-				vertexShader = shader;
-			} else {
-				fragmentShader = shader;
-			}
-		}
-		if (vertexShader == null) {
-			throw new PipelineException("no vertex shader");
-		}
-
-		// All SPIR-V reads happen here: the frontend frees the modules as soon as finishCompile() returns.
-		List<SpirvToMsl.Slot> slots = SpirvToMsl.assignSlots(createInfo.uniforms());
-		SpirvToMsl.Stage vertex = SpirvToMsl.translate(vertexShader.module(), vertexShader.entryPoint(), slots);
-		SpirvToMsl.Stage fragment = fragmentShader != null
-			? SpirvToMsl.translate(fragmentShader.module(), fragmentShader.entryPoint(), slots)
-			: null;
+	private static MetalRenderPipeline build(MetalDevice device, RenderPipeline renderPipeline, ByteBuffer vertexSpirv, ByteBuffer fragmentSpirv,
+											 List<SpirvToMsl.Binding> bindings) throws PipelineException, SpirvToMsl.TranslationException {
+		List<SpirvToMsl.Slot> slots = SpirvToMsl.assignSlots(bindings);
+		SpirvToMsl.Stage vertex = SpirvToMsl.translate(vertexSpirv, true, ENTRY_POINT, slots);
+		SpirvToMsl.Stage fragment = SpirvToMsl.translate(fragmentSpirv, false, ENTRY_POINT, slots);
 
 		// The descriptor lives as long as the pipeline: variants only rewrite the attachment fields.
+		String name = renderPipeline.getLocation().toString();
+		List<@Nullable ColorTargetState> targets = Arrays.asList(renderPipeline.getColorTargetStates());
 		Arena arena = Arena.ofAuto();
 		MemorySegment desc = arena.allocate(DESC_SIZE, 8);
-		writeDescriptor(desc, createInfo);
-		int depthFormat = defaultDepthFormat(createInfo);
-		int colorMask = targetMask(createInfo.colorTargetStates());
-		writeAttachments(desc, createInfo.colorTargetStates(), depthFormat, MetalFormats.PIXEL_INVALID, colorMask);
-		desc.set(JAVA_LONG, DESC_LABEL, arena.allocateFrom(createInfo.name()).address());
+		writeDescriptor(desc, renderPipeline);
+		int depthFormat = defaultDepthFormat(renderPipeline);
+		int colorMask = targetMask(targets);
+		writeAttachments(desc, targets, depthFormat, MetalFormats.PIXEL_INVALID, colorMask);
+		desc.set(JAVA_LONG, DESC_LABEL, arena.allocateFrom(name).address());
 
 		LibraryCache libraries = LIBRARIES.computeIfAbsent(device, d -> new LibraryCache());
 		long vertexFunction = 0L;
 		long fragmentFunction = 0L;
 		boolean built = false;
 		try {
-			vertexFunction = function(device, libraries, vertexShader.name(), vertex);
-			if (fragment != null) {
-				fragmentFunction = function(device, libraries, fragmentShader.name(), fragment);
-			}
+			vertexFunction = function(device, libraries, renderPipeline.getVertexShader().toString(), vertex);
+			fragmentFunction = function(device, libraries, renderPipeline.getFragmentShader().toString(), fragment);
 			desc.set(JAVA_LONG, DESC_VERTEX_FUNCTION, vertexFunction);
 			desc.set(JAVA_LONG, DESC_FRAGMENT_FUNCTION, fragmentFunction);
 			long state = Mtl.pipelineCreate(device.handle(), desc.address());
 			if (state == 0L) {
 				throw new PipelineException("render pipeline state: " + lastError());
 			}
-			MetalRenderPipeline pipeline = new MetalRenderPipeline(device, createInfo, slots, vertex, fragment, vertexFunction,
+			MetalRenderPipeline pipeline = new MetalRenderPipeline(device, renderPipeline, targets, bindings, slots, vertex, fragment, vertexFunction,
 				fragmentFunction, desc, MetalRenderPipeline.variantKey(depthFormat, MetalFormats.PIXEL_INVALID, colorMask), state);
 			built = true;
 			if (depthFormat == MetalFormats.PIXEL_INVALID) {
@@ -155,8 +146,8 @@ public final class MetalPipelineCompiler {
 	}
 
 	/** Depth format of the variant built eagerly: D32 when the pipeline tests or writes depth, none otherwise. */
-	static int defaultDepthFormat(BackendRenderPipeline.CreateInfo createInfo) {
-		return createInfo.depthStencilState() != null ? MetalFormats.PIXEL_DEPTH32_FLOAT : MetalFormats.PIXEL_INVALID;
+	static int defaultDepthFormat(RenderPipeline renderPipeline) {
+		return renderPipeline.getDepthStencilState() != null ? MetalFormats.PIXEL_DEPTH32_FLOAT : MetalFormats.PIXEL_INVALID;
 	}
 
 	/** Bit i set for every non-null color target state (the attachments of the default variant). */
@@ -170,47 +161,45 @@ public final class MetalPipelineCompiler {
 		return mask;
 	}
 
-	/** Everything except the function handles, the label and the attachments. */
-	static void writeDescriptor(MemorySegment desc, BackendRenderPipeline.CreateInfo createInfo) throws PipelineException {
-		int referencedSlots = 0;
-		for (BackendRenderPipeline.CreateInfo.AttribBinding attribute : createInfo.attribBindings()) {
-			int location = attribute.location();
-			int slot = attribute.bufferSlot();
-			if (location < 0 || location >= Mtl.MAX_VERTEX_ATTRIBUTES) {
-				throw new PipelineException("vertex attribute location " + location + " is out of range");
-			}
-			if (slot < 0 || slot >= MAX_VERTEX_BUFFERS) {
-				throw new PipelineException("vertex buffer slot " + slot + " is out of range");
-			}
-			int format = MetalFormats.vertexFormat(attribute.format());
-			if (format == 0) {
-				throw new PipelineException("vertex format " + attribute.format() + " has no Metal equivalent");
-			}
-			long at = DESC_ATTRIBUTES + location * ATTRIBUTE_SIZE;
-			desc.set(JAVA_INT, at, format);
-			desc.set(JAVA_INT, at + 4, attribute.offset());
-			desc.set(JAVA_INT, at + 8, MetalRenderPipeline.vertexBufferSlot(slot));
-			referencedSlots |= 1 << slot;
-		}
-		// Layouts only for buffers that feed an attribute; an unread buffer needs no vertex fetch.
-		int describedSlots = 0;
-		for (BackendRenderPipeline.CreateInfo.VertexBuffer buffer : createInfo.vertexBuffers()) {
-			int slot = buffer.bufferSlot();
-			if (slot < 0 || slot >= MAX_VERTEX_BUFFERS || (referencedSlots >>> slot & 1) == 0) {
+	/**
+	 * Everything except the function handles, the label and the attachments. Attribute locations are numbered across
+	 * the vertex formats in buffer slot order, one per element, as the Vulkan backend and IntermediaryShaderModule.rebind
+	 * number them.
+	 */
+	static void writeDescriptor(MemorySegment desc, RenderPipeline renderPipeline) throws PipelineException {
+		VertexFormat[] formats = renderPipeline.getVertexFormatBindings();
+		int location = 0;
+		for (int slot = 0; slot < formats.length; slot++) {
+			VertexFormat vertexFormat = formats[slot];
+			// Layouts only for buffers that feed an attribute; an unread buffer needs no vertex fetch.
+			if (vertexFormat == null || vertexFormat.getElements().isEmpty()) {
 				continue;
 			}
-			int stepRate = buffer.stepRate();
+			if (slot >= MAX_VERTEX_BUFFERS) {
+				throw new PipelineException("vertex buffer slot " + slot + " is out of range");
+			}
+			for (VertexFormatElement element : vertexFormat.getElements()) {
+				if (location >= Mtl.MAX_VERTEX_ATTRIBUTES) {
+					throw new PipelineException("vertex attribute location " + location + " is out of range");
+				}
+				int format = MetalFormats.vertexFormat(element.format());
+				if (format == 0) {
+					throw new PipelineException("vertex format " + element.format() + " has no Metal equivalent");
+				}
+				long at = DESC_ATTRIBUTES + location * ATTRIBUTE_SIZE;
+				desc.set(JAVA_INT, at, format);
+				desc.set(JAVA_INT, at + 4, element.offset());
+				desc.set(JAVA_INT, at + 8, MetalRenderPipeline.vertexBufferSlot(slot));
+				location++;
+			}
+			int stepRate = vertexFormat.getStepRate();
 			long at = DESC_LAYOUTS + MetalRenderPipeline.vertexBufferSlot(slot) * LAYOUT_SIZE;
-			desc.set(JAVA_INT, at, buffer.stride());
+			desc.set(JAVA_INT, at, vertexFormat.getVertexSize());
 			desc.set(JAVA_INT, at + 4, stepRate > 0 ? MetalFormats.STEP_PER_INSTANCE : MetalFormats.STEP_PER_VERTEX);
 			desc.set(JAVA_INT, at + 8, Math.max(stepRate, 1));
-			describedSlots |= 1 << slot;
-		}
-		if (referencedSlots != describedSlots) {
-			throw new PipelineException("vertex attributes read a buffer slot that has no vertex format");
 		}
 		desc.set(JAVA_INT, DESC_SAMPLE_COUNT, 1);
-		desc.set(JAVA_INT, DESC_TOPOLOGY_CLASS, MetalFormats.topologyClass(createInfo.primitiveTopology()));
+		desc.set(JAVA_INT, DESC_TOPOLOGY_CLASS, MetalFormats.topologyClass(renderPipeline.getPrimitiveTopology()));
 	}
 
 	/**

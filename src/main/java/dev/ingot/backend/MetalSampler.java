@@ -1,12 +1,12 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.textures.AddressMode;
-import com.mojang.renderpearl.api.textures.FilterMode;
-import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
 import java.util.OptionalDouble;
 
 /** An MTLSamplerState. Owner: core. */
-public class MetalSampler implements GpuSampler {
+public class MetalSampler extends GpuSampler {
 	private final MetalDevice device;
 	private final long handle;
 	private final AddressMode addressModeU;
@@ -64,7 +64,6 @@ public class MetalSampler implements GpuSampler {
 		return this.maxLod;
 	}
 
-	@Override
 	public boolean isClosed() {
 		return this.closed;
 	}

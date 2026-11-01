@@ -1,29 +1,30 @@
 package dev.ingot.shader;
 
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
-import com.mojang.renderpearl.api.pipeline.ShaderType;
-import com.mojang.renderpearl.backend.api.SpvModule;
+import com.mojang.blaze3d.GpuFormat;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.spvc.SpvcMslResourceBinding2;
+import org.lwjgl.util.spvc.SpvcReflectedResource;
 
 import static org.lwjgl.util.spvc.Spvc.*;
 
 /**
- * SPIR-V (as rewritten by renderpearl's PipelineBuilder) → MSL with SPIRV-Cross (LWJGL spvc). Port of the validated
- * prototype tools/shader-xlate/src/MslTranslator.java with its default options; for the same input both produce
- * byte-identical MSL. Owner: pipelines.
+ * SPIR-V (as compiled and rebound by vanilla's Vulkan GLSL compiler, see MetalPipelineCache) → MSL with SPIRV-Cross
+ * (LWJGL spvc). Port of the validated prototype tools/shader-xlate/src/MslTranslator.java with its default options; for
+ * the same input both produce byte-identical MSL. Owner: pipelines.
  *
- * <p>The frontend has already rewritten every resource to descriptor set 0, binding = index in
- * {@code CreateInfo.uniforms()}. Both stages share one Metal argument-table layout (compact numbering):
+ * <p>Every resource has already been rewritten to descriptor set 0, binding = index in the pipeline's binding list.
+ * Both stages share one Metal argument-table layout (compact numbering):
  * <pre>
  *   [[buffer(0..13)]]   uniform buffers: k-th UNIFORM_BUFFER of the pipeline → buffer(k)
  *   [[buffer(14)]]      push constants
- *   [[buffer(15..30)]]  vertex buffers (renderpearl slot s → 30 - s, via MTLVertexDescriptor only)
+ *   [[buffer(15..30)]]  vertex buffers (RenderPass slot s → 30 - s, via MTLVertexDescriptor only)
  *   [[texture(j)]]      j-th COMBINED_IMAGE_SAMPLER or TEXEL_BUFFER (texture_buffer&lt;T&gt;)
  *   [[sampler(m)]]      sampler half of the m-th COMBINED_IMAGE_SAMPLER
  * </pre>
@@ -44,8 +45,28 @@ public final class SpirvToMsl {
 	private static final int EXECUTION_MODEL_VERTEX = 0;
 	private static final int EXECUTION_MODEL_FRAGMENT = 4;
 
-	/** Metal argument-table indices of one CreateInfo.uniforms() entry; -1 where the kind does not apply. */
+	/** What a pipeline binding is. */
+	public enum BindingType {
+		UNIFORM_BUFFER,
+		COMBINED_IMAGE_SAMPLER,
+		TEXEL_BUFFER
+	}
+
+	/** One resource of a pipeline, by the name the game binds it with; texelFormat only for TEXEL_BUFFER. */
+	public record Binding(String name, BindingType type, @Nullable GpuFormat texelFormat) {
+	}
+
+	/** Metal argument-table indices of one pipeline binding; -1 where the kind does not apply. */
 	public record Slot(int buffer, int texture, int sampler) {
+	}
+
+	/**
+	 * What a module declares, in SPIRV-Cross reflection order: the order vanilla's IntermediaryShaderModule reflects (and
+	 * numbers vertex outputs) in.
+	 *
+	 * @param samplerDimensions SpvDim of each sampled image, parallel to {@code samplers}
+	 */
+	public record Reflection(List<String> uniformBuffers, List<String> samplers, List<Integer> samplerDimensions, List<String> outputs) {
 	}
 
 	/**
@@ -70,8 +91,8 @@ public final class SpirvToMsl {
 	private SpirvToMsl() {
 	}
 
-	/** Compact slot numbering for a pipeline's uniforms; list index i is SPIR-V binding i. */
-	public static List<Slot> assignSlots(List<BindGroupLayout.UniformDescription> uniforms) throws TranslationException {
+	/** Compact slot numbering for a pipeline's bindings; list index i is SPIR-V binding i. */
+	public static List<Slot> assignSlots(List<Binding> uniforms) throws TranslationException {
 		if (uniforms.size() > MAX_UNIFORMS) {
 			throw new TranslationException(uniforms.size() + " uniforms (at most " + MAX_UNIFORMS + " are supported)");
 		}
@@ -79,7 +100,7 @@ public final class SpirvToMsl {
 		int buffers = 0;
 		int textures = 0;
 		int samplers = 0;
-		for (BindGroupLayout.UniformDescription uniform : uniforms) {
+		for (Binding uniform : uniforms) {
 			Slot slot = switch (uniform.type()) {
 				case UNIFORM_BUFFER -> new Slot(buffers++, -1, -1);
 				case COMBINED_IMAGE_SAMPLER -> new Slot(-1, textures++, samplers++);
@@ -97,14 +118,13 @@ public final class SpirvToMsl {
 	}
 
 	/**
-	 * Translates one stage. Reads {@code module.spv()} without consuming it; nothing is retained after returning.
+	 * Translates one stage. Reads {@code spirv} without consuming it; nothing is retained after returning.
 	 *
 	 * @param slots the pipeline's {@link #assignSlots} result (the same list for both stages)
 	 */
-	public static Stage translate(SpvModule module, String entryPoint, List<Slot> slots) throws TranslationException {
-		boolean vertex = module.type() == ShaderType.VERTEX;
+	public static Stage translate(ByteBuffer spirv, boolean vertex, String entryPoint, List<Slot> slots) throws TranslationException {
 		int model = vertex ? EXECUTION_MODEL_VERTEX : EXECUTION_MODEL_FRAGMENT;
-		IntBuffer words = module.spv().asIntBuffer();
+		IntBuffer words = spirv.asIntBuffer();
 		long context = 0L;
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			PointerBuffer out = stack.mallocPointer(1);
@@ -120,7 +140,7 @@ public final class SpirvToMsl {
 
 			spvc_compiler_options_set_uint(options, SPVC_COMPILER_OPTION_MSL_VERSION, MSL_VERSION);
 			spvc_compiler_options_set_uint(options, SPVC_COMPILER_OPTION_MSL_PLATFORM, SPVC_MSL_PLATFORM_MACOS);
-			// Renderpearl renders in GL memory order (clip-space y = -1 in texel row 0); see docs/ARCHITECTURE.md.
+			// Minecraft renders in GL memory order (clip-space y = -1 in texel row 0); see docs/ARCHITECTURE.md.
 			spvc_compiler_options_set_bool(options, SPVC_COMPILER_OPTION_FLIP_VERTEX_Y, vertex);
 			// samplerBuffer/isamplerBuffer → texture_buffer<T>, bound as MTLTextureTypeTextureBuffer views.
 			spvc_compiler_options_set_bool(options, SPVC_COMPILER_OPTION_MSL_TEXTURE_BUFFER_NATIVE, true);
@@ -176,6 +196,50 @@ public final class SpirvToMsl {
 				spvc_context_destroy(context);
 			}
 		}
+	}
+
+	/** Reflects the uniform buffers, sampled images and stage outputs of a module. */
+	public static Reflection reflect(ByteBuffer spirv) throws TranslationException {
+		IntBuffer words = spirv.asIntBuffer();
+		long context = 0L;
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			PointerBuffer out = stack.mallocPointer(1);
+			check(0L, spvc_context_create(out), "spvc_context_create");
+			context = out.get(0);
+			check(context, spvc_context_parse_spirv(context, words, words.remaining(), out), "spvc_context_parse_spirv");
+			long ir = out.get(0);
+			check(context, spvc_context_create_compiler(context, SPVC_BACKEND_NONE, ir, SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, out),
+				"spvc_context_create_compiler");
+			long compiler = out.get(0);
+			check(context, spvc_compiler_create_shader_resources(compiler, out), "spvc_compiler_create_shader_resources");
+			long resources = out.get(0);
+			List<String> uniformBuffers = new ArrayList<>();
+			for (SpvcReflectedResource resource : resources(context, resources, SPVC_RESOURCE_TYPE_UNIFORM_BUFFER, stack)) {
+				uniformBuffers.add(resource.nameString());
+			}
+			List<String> samplers = new ArrayList<>();
+			List<Integer> samplerDimensions = new ArrayList<>();
+			for (SpvcReflectedResource resource : resources(context, resources, SPVC_RESOURCE_TYPE_SAMPLED_IMAGE, stack)) {
+				samplers.add(resource.nameString());
+				samplerDimensions.add(spvc_type_get_image_dimension(spvc_compiler_get_type_handle(compiler, resource.type_id())));
+			}
+			List<String> outputs = new ArrayList<>();
+			for (SpvcReflectedResource resource : resources(context, resources, SPVC_RESOURCE_TYPE_STAGE_OUTPUT, stack)) {
+				outputs.add(resource.nameString());
+			}
+			return new Reflection(uniformBuffers, samplers, samplerDimensions, outputs);
+		} finally {
+			if (context != 0L) {
+				spvc_context_destroy(context);
+			}
+		}
+	}
+
+	private static SpvcReflectedResource.Buffer resources(long context, long resources, int type, MemoryStack stack) throws TranslationException {
+		PointerBuffer list = stack.mallocPointer(1);
+		PointerBuffer count = stack.mallocPointer(1);
+		check(context, spvc_resources_get_resource_list_for_type(resources, type, list, count), "spvc_resources_get_resource_list_for_type");
+		return SpvcReflectedResource.create(list.get(0), (int) count.get(0));
 	}
 
 	private static void check(long context, int result, String what) throws TranslationException {

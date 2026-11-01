@@ -7,6 +7,30 @@
 @implementation IngotSurface
 @end
 
+INGOT_EXPORT void *ingot_view_metal_layer(void *ns_view) {
+    @autoreleasepool {
+        id view_object = INGOT_OBJ(id, ns_view);
+        if (![view_object isKindOfClass:[NSView class]]) {
+            ingot_set_error([NSString stringWithFormat:@"window view is %@, not an NSView", [view_object class]]);
+            return NULL;
+        }
+        NSView *view = view_object;
+        if ([view.layer isKindOfClass:[CAMetalLayer class]]) {
+            return (__bridge void *)view.layer;
+        }
+        // A layer-hosting view: the layer is set before wantsLayer, so AppKit uses it instead of making its own.
+        CAMetalLayer *layer = [CAMetalLayer layer];
+        layer.contentsScale = view.window != nil ? view.window.backingScaleFactor : 1.0;
+        [view setLayer:layer];
+        [view setWantsLayer:YES];
+        // surface_window finds the window through the layer's delegate.
+        if (layer.delegate == nil) {
+            layer.delegate = (id<CALayerDelegate>)view;
+        }
+        return (__bridge void *)layer;
+    }
+}
+
 INGOT_EXPORT void *ingot_surface_create(void *device, void *metal_layer) {
     @autoreleasepool {
         IngotDevice *dev = INGOT_OBJ(IngotDevice *, device);
@@ -125,7 +149,7 @@ INGOT_EXPORT void *ingot_surface_next_drawable(void *surface) {
     }
 }
 
-// The NSWindow showing the layer: SDL's Metal view hosts it, and AppKit makes a view the delegate of its layer.
+// The NSWindow showing the layer: GLFW's content view hosts it and is the delegate of its layer.
 static NSWindow *surface_window(IngotSurface *surface) {
     for (CALayer *layer = surface->layer; layer != nil; layer = layer.superlayer) {
         id delegate = layer.delegate;

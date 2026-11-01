@@ -3,7 +3,7 @@ package dev.ingot.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.mojang.renderpearl.api.device.BackendCreationException;
+import com.mojang.blaze3d.systems.BackendCreationException;
 import dev.ingot.backend.MetalBackend;
 import dev.ingot.energy.PowerPolicy;
 import net.minecraft.client.Minecraft;
@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Minecraft.class)
 abstract class MinecraftMixin {
 	@WrapOperation(method = "<init>", require = 0, at = @At(value = "INVOKE",
-		target = "Lcom/mojang/renderpearl/backend/vulkan/VulkanBackend;checkBackendAvailable()Lcom/mojang/renderpearl/api/device/BackendCreationException;"))
+		target = "Lcom/mojang/blaze3d/vulkan/VulkanBackend;checkBackendAvailable()Lcom/mojang/blaze3d/systems/BackendCreationException;"))
 	private @Nullable BackendCreationException ingot$skipVulkanProbe(Operation<BackendCreationException> probe, @Local(argsOnly = true) GameConfig gameConfig) {
 		// The same effective preference Minecraft computed just before (launch argument, else the possibly reset option).
 		PreferredGraphicsApi forced = gameConfig.game.forcedGraphicsApi;

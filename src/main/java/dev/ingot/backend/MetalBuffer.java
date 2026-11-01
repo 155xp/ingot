@@ -1,9 +1,8 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.backend.common.BaseGpuBuffer;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import dev.ingot.nativ.Mtl;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -19,7 +18,7 @@ import org.lwjgl.system.MemoryUtil;
  * didModifyRange, and ranges still mapped for writing are reported before every commit (see
  * {@link MetalDevice#flushManagedWrites}), so CPU writes made before a submit reach every command in it.
  */
-public class MetalBuffer extends BaseGpuBuffer {
+public class MetalBuffer extends GpuBuffer {
 	/** Serial of the most recent command buffer that referenced this buffer. Written by every user. CONTRACT */
 	public long lastUseSerial;
 

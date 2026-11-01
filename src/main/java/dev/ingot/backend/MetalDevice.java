@@ -1,28 +1,30 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.commands.GpuQueryPool;
-import com.mojang.renderpearl.api.device.BackendCreationException;
-import com.mojang.renderpearl.api.device.DeviceFeatures;
-import com.mojang.renderpearl.api.device.DeviceInfo;
-import com.mojang.renderpearl.api.device.DeviceLimits;
-import com.mojang.renderpearl.api.device.DeviceType;
-import com.mojang.renderpearl.api.device.GpuDebugOptions;
-import com.mojang.renderpearl.api.device.GpuDeviceLossException;
-import com.mojang.renderpearl.api.device.GpuOutOfMemoryException;
-import com.mojang.renderpearl.api.device.HintsAndWorkarounds;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.textures.AddressMode;
-import com.mojang.renderpearl.api.textures.FilterMode;
-import com.mojang.renderpearl.api.textures.GpuSampler;
-import com.mojang.renderpearl.api.textures.GpuTexture;
-import com.mojang.renderpearl.api.textures.GpuTextureView;
-import com.mojang.renderpearl.backend.api.BackendRenderPipeline;
-import com.mojang.renderpearl.backend.api.CommandEncoderBackend;
-import com.mojang.renderpearl.backend.api.GpuDeviceBackend;
-import com.mojang.renderpearl.backend.api.GpuSurfaceBackend;
+import com.mojang.blaze3d.GpuDeviceLossException;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.GpuOutOfMemoryException;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.pipeline.CompiledRenderPipeline;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.shaders.GpuDebugOptions;
+import com.mojang.blaze3d.shaders.ShaderSource;
+import com.mojang.blaze3d.systems.BackendCreationException;
+import com.mojang.blaze3d.systems.CommandEncoderBackend;
+import com.mojang.blaze3d.systems.DeviceFeatures;
+import com.mojang.blaze3d.systems.DeviceInfo;
+import com.mojang.blaze3d.systems.DeviceLimits;
+import com.mojang.blaze3d.systems.DeviceType;
+import com.mojang.blaze3d.systems.GpuDeviceBackend;
+import com.mojang.blaze3d.systems.GpuQueryPool;
+import com.mojang.blaze3d.systems.GpuSurfaceBackend;
+import com.mojang.blaze3d.systems.HintsAndWorkarounds;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import dev.ingot.Ingot;
 import dev.ingot.IngotConfig;
 import dev.ingot.nativ.Mtl;
@@ -32,10 +34,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.OptionalDouble;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import net.minecraft.util.Mth;
 import org.jspecify.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
 
 /**
@@ -71,6 +73,7 @@ public final class MetalDevice implements GpuDeviceBackend {
 	private final long scratch;
 	private final ByteBuffer labelScratch;
 	private final MetalCommandEncoder encoder;
+	private final MetalPipelineCache pipelines;
 	private volatile long currentSerial = 1L;
 	private volatile long completedSerial;
 	private boolean gpuErrorReported;
@@ -80,7 +83,7 @@ public final class MetalDevice implements GpuDeviceBackend {
 	 * Creates the native device. Every failure must surface as BackendCreationException (so Minecraft falls back).
 	 * CONTRACT
 	 */
-	public MetalDevice(MetalBackend backend, GpuDebugOptions debugOptions) throws BackendCreationException {
+	public MetalDevice(MetalBackend backend, ShaderSource defaultShaderSource, GpuDebugOptions debugOptions) throws BackendCreationException {
 		long device;
 		try {
 			this.debugLabels = IngotConfig.get().debugLabels || debugOptions.useLabels();
@@ -94,10 +97,10 @@ public final class MetalDevice implements GpuDeviceBackend {
 			});
 			device = Mtl.deviceCreate(this.debugLabels ? Mtl.DEVICE_FLAG_DEBUG_LABELS : 0);
 		} catch (Throwable t) {
-			throw new BackendCreationException("Could not create the Metal device: " + t, BackendCreationException.Reason.PLATFORM_ERROR);
+			throw new BackendCreationException("Could not create the Metal device: " + t, BackendCreationException.Reason.OTHER);
 		}
 		if (device == 0L) {
-			throw new BackendCreationException("No usable Metal device: " + lastError(), BackendCreationException.Reason.PLATFORM_ERROR);
+			throw new BackendCreationException("No usable Metal device: " + lastError(), BackendCreationException.Reason.OTHER);
 		}
 		this.handle = device;
 		long scratch = 0L;
@@ -106,20 +109,22 @@ public final class MetalDevice implements GpuDeviceBackend {
 			boolean mac2 = Mtl.deviceQuery(device, Mtl.QUERY_MAC2_FAMILY) != 0L;
 			if (this.caps.appleFamily() == 0 && !mac2) {
 				throw new BackendCreationException(this.caps.name() + " supports neither an Apple GPU family nor MTLGPUFamilyMac2",
-					BackendCreationException.Reason.PLATFORM_ERROR);
+					BackendCreationException.Reason.OTHER);
 			}
 			this.deviceInfo = createDeviceInfo(this.caps, mac2);
 			scratch = MemoryUtil.nmemAllocChecked(LABEL_CAPACITY + 16);
 			this.scratch = scratch;
 			this.labelScratch = MemoryUtil.memByteBuffer(scratch, LABEL_CAPACITY);
 			this.encoder = new MetalCommandEncoder(this);
+			// shaderc and SPIRV-Cross come with the game (LWJGL); the first use loads them.
+			this.pipelines = new MetalPipelineCache(this, defaultShaderSource);
 		} catch (Throwable t) {
 			MemoryUtil.nmemFree(scratch);
 			Mtl.deviceDestroy(device);
 			if (t instanceof BackendCreationException e) {
 				throw e;
 			}
-			throw new BackendCreationException("Could not initialize the Metal device: " + t, BackendCreationException.Reason.PLATFORM_ERROR);
+			throw new BackendCreationException("Could not initialize the Metal device: " + t, BackendCreationException.Reason.OTHER);
 		}
 	}
 
@@ -141,35 +146,29 @@ public final class MetalDevice implements GpuDeviceBackend {
 
 	/** The values documented in docs/ARCHITECTURE.md "Device info reported". */
 	private static DeviceInfo createDeviceInfo(MetalCaps caps, boolean mac2) {
-		boolean wireframeFillMode = true;
 		boolean shaderDrawParameters = true;
 		boolean multiDrawDirectInterleaved = true;
 		boolean multiDrawDirectSeparate = true;
-		boolean multiDrawIndirect = true;
+		// -Dingot.multiDrawIndirect=false reports no indirect multi-draw, so the level renderer issues terrain as direct
+		// draws instead of one indirect draw per section.
+		boolean multiDrawIndirect = !"false".equals(System.getProperty("ingot.multiDrawIndirect"));
 		boolean drawIndirect = true;
 		boolean nonZeroFirstInstance = true;
 		boolean persistentMapping = true;
-		DeviceFeatures features = new DeviceFeatures(wireframeFillMode, shaderDrawParameters, multiDrawDirectInterleaved, multiDrawDirectSeparate,
-			multiDrawIndirect, drawIndirect, nonZeroFirstInstance, persistentMapping);
+		DeviceFeatures features = new DeviceFeatures(shaderDrawParameters, multiDrawDirectInterleaved, multiDrawDirectSeparate, multiDrawIndirect,
+			drawIndirect, nonZeroFirstInstance, persistentMapping);
 
 		int maxAnisotropy = 16;
 		int maxMultiDrawDirectInterleavedDrawCount = 1 << 20;
-		// -Dingot.multiDrawIndirect=false reports no indirect multi-draw, so the level renderer issues terrain as direct
-		// draws (ChunkSectionsToRender.DrawSeparate) instead of one indirect draw per section.
-		int maxDrawIndirectDrawCount = "false".equals(System.getProperty("ingot.multiDrawIndirect")) ? 0 : Integer.MAX_VALUE;
 		DeviceLimits limits = new DeviceLimits(maxAnisotropy, caps.uniformOffsetAlignment(), caps.maxTextureSize(), caps.maxBufferLength(),
-			maxMultiDrawDirectInterleavedDrawCount, Mtl.MAX_COLOR_TARGETS, maxDrawIndirectDrawCount);
+			maxMultiDrawDirectInterleavedDrawCount, Mtl.MAX_COLOR_TARGETS);
 
 		// writeToBufferIsSlow selects the persistently mapped chunk staging ring, ideal for unified memory. Not on
 		// non-unified devices: there the ring is Managed and stays mapped, so every commit would report (and upload)
 		// all of its mapped bytes again; the CPU staging path uploads only what changed.
 		boolean writeToBufferIsSlow = caps.unifiedMemory();
 		boolean anisotropyHasKnownIssues = false;
-		// The vanilla rule (Util.isAppleSiliconMac): true on every Apple GPU.
-		boolean isExplicitDepthRequired = caps.name().startsWith("Apple");
-		boolean multiDrawIndirectHasKnownIssues = false;
-		HintsAndWorkarounds hints = new HintsAndWorkarounds(writeToBufferIsSlow, anisotropyHasKnownIssues, isExplicitDepthRequired,
-			multiDrawIndirectHasKnownIssues);
+		HintsAndWorkarounds hints = new HintsAndWorkarounds(writeToBufferIsSlow, anisotropyHasKnownIssues);
 
 		String family = caps.appleFamily() > 0 ? "MTLGPUFamilyApple" + caps.appleFamily() : "MTLGPUFamilyMac2";
 		List<String> extensions = new ArrayList<>(3);
@@ -288,8 +287,8 @@ public final class MetalDevice implements GpuDeviceBackend {
 	}
 
 	@Override
-	public GpuSurfaceBackend createSurface(long windowHandle, BooleanSupplier isIconified) {
-		return new MetalSurface(this, windowHandle, isIconified);
+	public GpuSurfaceBackend createSurface(long windowHandle) {
+		return new MetalSurface(this, windowHandle, () -> GLFW.glfwGetWindowAttrib(windowHandle, GLFW.GLFW_ICONIFIED) != 0);
 	}
 
 	@Override
@@ -310,6 +309,12 @@ public final class MetalDevice implements GpuDeviceBackend {
 			throw new IllegalStateException("Could not create a Metal sampler: " + lastError());
 		}
 		return new MetalSampler(this, sampler, addressModeU, addressModeV, minFilter, magFilter, maxAnisotropy, maxLod);
+	}
+
+	@Override
+	public GpuTexture createTexture(@Nullable Supplier<String> label, int usage, GpuFormat format, int width, int height, int depthOrLayers,
+									int mipLevels) {
+		return this.createTexture(this.debugLabels && label != null ? label.get() : null, usage, format, width, height, depthOrLayers, mipLevels);
 	}
 
 	@Override
@@ -335,6 +340,11 @@ public final class MetalDevice implements GpuDeviceBackend {
 			throw new GpuOutOfMemoryException("Could not create the " + width + "x" + height + " " + format + " texture " + label + ": " + lastError());
 		}
 		return new MetalTexture(this, texture, pixelFormat, cube, usage, label != null ? label : "", format, width, height, depthOrLayers, mipLevels);
+	}
+
+	@Override
+	public GpuTextureView createTextureView(GpuTexture texture) {
+		return this.createTextureView(texture, 0, texture.getMipLevels());
 	}
 
 	@Override
@@ -416,8 +426,18 @@ public final class MetalDevice implements GpuDeviceBackend {
 	}
 
 	@Override
-	public BackendRenderPipeline.Pending compilePipeline(BackendRenderPipeline.CreateInfo pipelineCreateInfo) {
-		return MetalPipelineCompiler.compile(this, pipelineCreateInfo);
+	public CompiledRenderPipeline precompilePipeline(RenderPipeline pipeline, @Nullable ShaderSource shaderSource) {
+		return this.pipelines.get(pipeline, shaderSource);
+	}
+
+	/** The compiled pipeline for setPipeline (MetalPipelineCache.INVALID if it cannot be built). Render thread. CONTRACT */
+	public CompiledRenderPipeline pipeline(RenderPipeline pipeline) {
+		return this.pipelines.get(pipeline, null);
+	}
+
+	@Override
+	public void clearPipelineCache() {
+		this.pipelines.clear();
 	}
 
 	@Override
@@ -426,6 +446,7 @@ public final class MetalDevice implements GpuDeviceBackend {
 			return;
 		}
 		this.encoder.shutdown();
+		this.pipelines.close();
 		MetalPipelineCompiler.releaseLibraries(this);
 		for (long depthStencil : this.depthStencilStates) {
 			if (depthStencil != 0L) {
@@ -443,9 +464,9 @@ public final class MetalDevice implements GpuDeviceBackend {
 	}
 
 	@Override
-	public long getTimestampCalibrationOffset() {
-		// Timestamps already are System.nanoTime() values.
-		return 0L;
+	public long getTimestampNow() {
+		// Timestamps are System.nanoTime() values.
+		return System.nanoTime();
 	}
 
 	@Override

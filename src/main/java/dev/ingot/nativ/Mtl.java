@@ -685,6 +685,16 @@ public final class Mtl {
 		}
 	}
 
+	private static final MethodHandle H_VIEW_METAL_LAYER = link("ingot_view_metal_layer", FunctionDescriptor.of(JAVA_LONG, JAVA_LONG), false);
+
+	public static long viewMetalLayer(long ns_view) {
+		try {
+			return (long) H_VIEW_METAL_LAYER.invokeExact(ns_view);
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
+	}
+
 	private static final MethodHandle H_SURFACE_CREATE = link("ingot_surface_create", FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG), false);
 
 	public static long surfaceCreate(long device, long metal_layer) {

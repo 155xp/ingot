@@ -20,6 +20,27 @@ in the list of backends the game tries on macOS. Everything above the backend in
                          Metal  ·  CAMetalLayer
 ```
 
+## Minecraft 26.2 (this branch)
+
+26.2 has the same pluggable backends, but before the `renderpearl` split: the interfaces (`GpuBackend`,
+`GpuDeviceBackend`, `CommandEncoderBackend`, `RenderPassBackend`, `GpuSurfaceBackend`) live in
+`com.mojang.blaze3d.systems`, and the rest of this document's `renderpearl` types have `com.mojang.blaze3d` equivalents.
+What differs for Ingot:
+
+* **Window**: GLFW, not SDL. `MetalBackend.setWindowHints` asks for a window without a GL context, and
+  `MetalSurface` makes GLFW's content view host a CAMetalLayer (`ingot_view_metal_layer`), as GLFW does for MoltenVK.
+  Minecraft sizes the surface from GLFW's framebuffer size, so `MetalSurface.configure` applies `RenderScale` itself.
+* **Pipelines**: there is no frontend shader compiler and no `compilePipeline`. The backend gets the `RenderPipeline`
+  (`precompilePipeline`, `setPipeline`) and compiles it on the render thread on first use; `clearPipelineCache` drops
+  everything on resource reload. `MetalPipelineCache` compiles GLSL with vanilla's Vulkan `GlslCompiler` (shaderc) and
+  numbers bindings, vertex inputs and the stage interface with `IntermediaryShaderModule.rebind`, exactly as the Vulkan
+  backend does; `MetalPipelineCompiler` and `SpirvToMsl` continue from that SPIR-V as before.
+* **Bindings** are by name (`setUniform(String, ...)`, `bindTexture(String, view, sampler)`), stored per pass, and the
+  frontend does not replay them after `setPipeline`: `MetalRenderPass` keeps every value set in the pass by name and
+  fills the new pipeline's slots from it. No push constants; `drawMultipleIndexed` is implemented by the backend.
+* Device info has no `wireframeFillMode`, `maxDrawIndirectDrawCount` or depth hints; `-Dingot.multiDrawIndirect=false`
+  reports `multiDrawIndirect = false` instead.
+
 **Reference notes** (read the relevant one before changing a contract): `docs/research/frontend-contracts.md`,
 `vulkan-backend-reference.md`, `pipelines-and-shaders.md`, `integration-points.md`, `hot-paths-and-features.md`,
 `shader-translation-experiment.md`. The working SPIR-V→MSL prototype is `tools/shader-xlate/src/MslTranslator.java`.

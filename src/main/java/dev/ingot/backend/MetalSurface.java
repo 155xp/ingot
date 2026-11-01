@@ -1,11 +1,12 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.device.GpuSurface;
-import com.mojang.renderpearl.api.device.SurfaceException;
-import com.mojang.renderpearl.api.textures.GpuTextureView;
-import com.mojang.renderpearl.backend.api.CommandEncoderBackend;
-import com.mojang.renderpearl.backend.api.GpuSurfaceBackend;
+import com.mojang.blaze3d.systems.CommandEncoderBackend;
+import com.mojang.blaze3d.systems.GpuSurface;
+import com.mojang.blaze3d.systems.GpuSurfaceBackend;
+import com.mojang.blaze3d.systems.SurfaceException;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import dev.ingot.IngotConfig;
+import dev.ingot.energy.RenderScale;
 import dev.ingot.nativ.Mtl;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,18 +14,16 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.Nullable;
-import org.lwjgl.sdl.SDLError;
-import org.lwjgl.sdl.SDLHints;
-import org.lwjgl.sdl.SDLMetal;
+import org.lwjgl.glfw.GLFWNativeCocoa;
 import org.lwjgl.system.MemoryUtil;
 
 /**
  * CAMetalLayer-backed surface with late drawable acquisition. Owner: passes.
  *
- * <p>acquireNextTexture only checks that the window can be presented to. The drawable is taken in blitFromTexture,
- * after all of the frame's CPU work, and the flip-blit plus presentDrawable: are encoded into the frame's command
- * buffer there, because Minecraft calls present() only after submit() has committed it, so present() has nothing left
- * to do. Nothing in the present path throws: a frame without a drawable is simply not shown.
+ * <p>acquireNextTexture has nothing to do. The drawable is taken in blitFromTexture, after all of the frame's CPU work,
+ * and the flip-blit plus presentDrawable: are encoded into the frame's command buffer there, because Minecraft calls
+ * present() only after submit() has committed it, so present() has nothing left to do. Nothing in the present path
+ * throws: a frame without a drawable is simply not shown.
  */
 public final class MetalSurface implements GpuSurfaceBackend {
 	private static final Set<GpuSurface.PresentMode> PRESENT_MODES =
@@ -43,7 +42,6 @@ public final class MetalSurface implements GpuSurfaceBackend {
 	private final BooleanSupplier isIconified;
 	/** Treat a fully covered window as invisible: no drawable is taken (it could block) and nothing is presented. */
 	private final boolean skipWhenOccluded;
-	private long view;
 	private long surface;
 	/** Serial of the command buffer that carries the most recent presentDrawable:. */
 	private long presentSerial;
@@ -60,17 +58,11 @@ public final class MetalSurface implements GpuSurfaceBackend {
 		this.isIconified = isIconified;
 		this.skipWhenOccluded = IngotConfig.get().throttleWhenOccluded;
 
-		// Ingot owns drawableSize (set in configure); the hint is only honoured when set before the view exists.
-		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_METAL_AUTO_RESIZE_DRAWABLE, "0");
-		this.view = SDLMetal.SDL_Metal_CreateView(windowHandle);
-		if (this.view == 0L) {
-			throw new IllegalStateException("SDL_Metal_CreateView failed: " + SDLError.SDL_GetError());
-		}
-		this.surface = Mtl.surfaceCreate(device.handle(), SDLMetal.SDL_Metal_GetLayer(this.view));
+		// The layer stays on GLFW's content view for the window's lifetime; Ingot owns its drawableSize (set in configure).
+		long layer = Mtl.viewMetalLayer(GLFWNativeCocoa.glfwGetCocoaView(windowHandle));
+		this.surface = layer != 0L ? Mtl.surfaceCreate(device.handle(), layer) : 0L;
 		if (this.surface == 0L) {
-			String error = MemoryUtil.memUTF8(Mtl.lastError());
-			SDLMetal.SDL_Metal_DestroyView(this.view);
-			throw new IllegalStateException("Could not set up the window's CAMetalLayer: " + error);
+			throw new IllegalStateException("Could not set up the window's CAMetalLayer: " + MemoryUtil.memUTF8(Mtl.lastError()));
 		}
 		current = this;
 	}
@@ -111,12 +103,16 @@ public final class MetalSurface implements GpuSurfaceBackend {
 
 	@Override
 	public void configure(GpuSurface.Configuration config) throws SurfaceException {
+		// Minecraft configures the window's size in pixels; the drawable has the size it renders at (RenderScale), which
+		// the layer stretches over the window.
+		int width = RenderScale.scale(config.width());
+		int height = RenderScale.scale(config.height());
 		int maxSize = this.device.caps().maxTextureSize();
-		if (config.width() <= 0 || config.height() <= 0 || config.width() > maxSize || config.height() > maxSize) {
-			throw new SurfaceException("Surface size " + config.width() + "x" + config.height() + " is outside 1.." + maxSize);
+		if (width <= 0 || height <= 0 || width > maxSize || height > maxSize) {
+			throw new SurfaceException("Surface size " + width + "x" + height + " is outside 1.." + maxSize);
 		}
 		int displaySync = config.presentMode() == GpuSurface.PresentMode.FIFO ? 1 : 0;
-		Mtl.surfaceConfigure(this.surface, config.width(), config.height(), displaySync, MAX_DRAWABLES);
+		Mtl.surfaceConfigure(this.surface, width, height, displaySync, MAX_DRAWABLES);
 		this.suboptimal = false;
 	}
 
@@ -127,15 +123,13 @@ public final class MetalSurface implements GpuSurfaceBackend {
 
 	@Override
 	public void acquireNextTexture() throws SurfaceException {
-		// Like the GL backend: Minecraft then stops acquiring (and logs once) until the window is restored.
-		if (this.isIconified.getAsBoolean()) {
-			throw new SurfaceException("Cannot acquire a minimized window");
-		}
+		// Nothing to do: a minimized window is skipped in blitFromTexture. Throwing here would make Minecraft reconfigure
+		// and fail again every other frame, logging each time.
 	}
 
 	@Override
 	public void blitFromTexture(CommandEncoderBackend commandEncoder, GpuTextureView textureView) {
-		if (this.skipWhenOccluded && !this.isVisible()) {
+		if (this.isIconified.getAsBoolean() || this.skipWhenOccluded && !this.isVisible()) {
 			return;
 		}
 		boolean withoutWaiting = presentWithoutWaiting;
@@ -177,8 +171,6 @@ public final class MetalSurface implements GpuSurfaceBackend {
 		}
 		Mtl.surfaceDestroy(this.surface);
 		this.surface = 0L;
-		SDLMetal.SDL_Metal_DestroyView(this.view);
-		this.view = 0L;
 		if (current == this) {
 			current = null;
 		}

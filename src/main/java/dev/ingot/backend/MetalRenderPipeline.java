@@ -1,13 +1,12 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.PolygonMode;
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
-import com.mojang.renderpearl.api.pipeline.UniformType;
-import com.mojang.renderpearl.backend.api.BackendRenderPipeline;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.CompiledRenderPipeline;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.PolygonMode;
 import dev.ingot.Ingot;
 import dev.ingot.nativ.Mtl;
 import dev.ingot.shader.SpirvToMsl;
@@ -20,10 +19,7 @@ import org.jspecify.annotations.Nullable;
  * A compiled pipeline: per-stage MTLFunctions, the PSO variants (keyed by attachment formats) and the immutable
  * state the render pass needs on every setPipeline. Owner: pipelines.
  */
-public final class MetalRenderPipeline implements BackendRenderPipeline {
-	/** Argument-table index of push constants in both stages. CONTRACT */
-	public static final int PUSH_CONSTANT_SLOT = SpirvToMsl.PUSH_CONSTANT_BUFFER;
-
+public final class MetalRenderPipeline implements CompiledRenderPipeline {
 	/** Set once any pipeline has built a variant on the render thread; later ones log at debug level. Render thread. */
 	private static boolean variantWarned;
 
@@ -36,13 +32,12 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 	private final @Nullable DepthStencilState depthStencilState;
 	private final float depthBiasConstant;
 	private final float depthBiasSlope;
-	private final UniformType[] uniformTypes;
+	private final String[] uniformNames;
+	private final SpirvToMsl.BindingType[] uniformTypes;
 	private final int[] uniformSlots;
 	private final int[] uniformSamplerSlots;
 	private final int[] uniformStages;
 	private final @Nullable GpuFormat[] texelBufferFormats;
-	private final int pushConstantSize;
-	private final int pushConstantStages;
 	private final long vertexFunction;
 	private final long fragmentFunction;
 	/** The IngotPipelineDesc the default variant was built from; variants rewrite its attachment fields. */
@@ -55,41 +50,41 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 	private int variantCount;
 	private boolean closed;
 
-	MetalRenderPipeline(MetalDevice device, BackendRenderPipeline.CreateInfo createInfo, List<SpirvToMsl.Slot> slots, SpirvToMsl.Stage vertex,
-						SpirvToMsl.@Nullable Stage fragment, long vertexFunction, long fragmentFunction, MemorySegment desc, long defaultKey,
-						long defaultState) {
+	MetalRenderPipeline(MetalDevice device, RenderPipeline renderPipeline, List<@Nullable ColorTargetState> colorTargets,
+						List<SpirvToMsl.Binding> bindings, List<SpirvToMsl.Slot> slots, SpirvToMsl.Stage vertex, SpirvToMsl.Stage fragment,
+						long vertexFunction, long fragmentFunction, MemorySegment desc, long defaultKey, long defaultState) {
 		this.device = device;
-		this.name = createInfo.name();
-		this.topology = createInfo.primitiveTopology();
+		this.name = renderPipeline.getLocation().toString();
+		this.topology = renderPipeline.getPrimitiveTopology();
 		this.primitiveType = MetalFormats.primitiveType(this.topology);
-		this.cullMode = createInfo.cull() ? MetalFormats.CULL_BACK : MetalFormats.CULL_NONE;
-		this.fillMode = createInfo.polygonMode() == PolygonMode.WIREFRAME ? MetalFormats.FILL_LINES : MetalFormats.FILL_FILL;
-		this.depthStencilState = createInfo.depthStencilState();
+		this.cullMode = renderPipeline.isCull() ? MetalFormats.CULL_BACK : MetalFormats.CULL_NONE;
+		this.fillMode = renderPipeline.getPolygonMode() == PolygonMode.WIREFRAME ? MetalFormats.FILL_LINES : MetalFormats.FILL_FILL;
+		this.depthStencilState = renderPipeline.getDepthStencilState();
 		this.depthBiasConstant = this.depthStencilState != null ? this.depthStencilState.depthBiasConstant() : 0.0F;
 		this.depthBiasSlope = this.depthStencilState != null ? this.depthStencilState.depthBiasScaleFactor() : 0.0F;
 
-		int count = createInfo.uniforms().size();
-		this.uniformTypes = new UniformType[count];
+		int count = bindings.size();
+		this.uniformNames = new String[count];
+		this.uniformTypes = new SpirvToMsl.BindingType[count];
 		this.uniformSlots = new int[count];
 		this.uniformSamplerSlots = new int[count];
 		this.uniformStages = new int[count];
 		this.texelBufferFormats = new GpuFormat[count];
 		for (int i = 0; i < count; i++) {
-			BindGroupLayout.UniformDescription uniform = createInfo.uniforms().get(i);
+			SpirvToMsl.Binding binding = bindings.get(i);
 			SpirvToMsl.Slot slot = slots.get(i);
-			this.uniformTypes[i] = uniform.type();
-			this.uniformSlots[i] = uniform.type() == UniformType.UNIFORM_BUFFER ? slot.buffer() : slot.texture();
+			this.uniformNames[i] = binding.name();
+			this.uniformTypes[i] = binding.type();
+			this.uniformSlots[i] = binding.type() == SpirvToMsl.BindingType.UNIFORM_BUFFER ? slot.buffer() : slot.texture();
 			this.uniformSamplerSlots[i] = slot.sampler();
-			this.uniformStages[i] = stageMask(vertex.uses(i), fragment != null && fragment.uses(i));
-			this.texelBufferFormats[i] = uniform.type() == UniformType.TEXEL_BUFFER ? uniform.gpuFormat() : null;
+			this.uniformStages[i] = stageMask(vertex.uses(i), fragment.uses(i));
+			this.texelBufferFormats[i] = binding.texelFormat();
 		}
-		this.pushConstantSize = createInfo.pushConstantsSize();
-		this.pushConstantStages = stageMask(vertex.usesPushConstants(), fragment != null && fragment.usesPushConstants());
 
 		this.vertexFunction = vertexFunction;
 		this.fragmentFunction = fragmentFunction;
 		this.desc = desc;
-		this.colorTargets = createInfo.colorTargetStates();
+		this.colorTargets = colorTargets;
 		this.variantKeys[0] = defaultKey;
 		this.variantStates[0] = defaultState;
 		this.variantCount = 1;
@@ -104,7 +99,7 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 		return (long) depthPixelFormat << 40 | (long) stencilPixelFormat << 16 | colorAttachmentMask & 0xFFFFL;
 	}
 
-	/** Argument-table index (vertex stage) of renderpearl vertex buffer slot {@code slot}. CONTRACT */
+	/** Argument-table index (vertex stage) of RenderPass vertex buffer slot {@code slot}. CONTRACT */
 	public static int vertexBufferSlot(int slot) {
 		return 30 - slot;
 	}
@@ -149,13 +144,30 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 		return this.depthStencilState;
 	}
 
-	/** Size of CreateInfo.uniforms(). CONTRACT */
+	/** Number of bindings (uniform buffers, texel buffers and sampled textures). CONTRACT */
 	public int uniformCount() {
 		return this.uniformTypes.length;
 	}
 
+	/** Index of the binding the game sets under {@code name}, or -1 if the pipeline has none. CONTRACT */
+	public int uniformIndex(String name) {
+		String[] names = this.uniformNames;
+		for (int i = 0; i < names.length; i++) {
+			// Names are mostly the same string constants, so the identity check usually decides.
+			if (names[i] == name || names[i].equals(name)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
 	/** CONTRACT */
-	public UniformType uniformType(int index) {
+	public String uniformName(int index) {
+		return this.uniformNames[index];
+	}
+
+	/** CONTRACT */
+	public SpirvToMsl.BindingType uniformType(int index) {
 		return this.uniformTypes[index];
 	}
 
@@ -179,16 +191,6 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 		return this.texelBufferFormats[index];
 	}
 
-	/** Declared push constant size in bytes (0 = none). CONTRACT */
-	public int pushConstantSize() {
-		return this.pushConstantSize;
-	}
-
-	/** Mtl.STAGE_* mask of stages that read the push constant block; 0 if none. CONTRACT */
-	public int pushConstantStages() {
-		return this.pushConstantStages;
-	}
-
 	/**
 	 * id&lt;MTLRenderPipelineState&gt; for a pass with these attachments, compiled on first use (unless the compiling
 	 * worker already built it) and cached. Returns 0 if the variant cannot be built (logged once). Render thread. CONTRACT
@@ -203,7 +205,7 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 		return this.createVariant(key, depthPixelFormat, stencilPixelFormat, colorAttachmentMask, true);
 	}
 
-	/** Builds a variant on the compiling worker thread, before the pipeline is handed to the frontend. */
+	/** Builds a variant while the pipeline is being compiled, before its first use. */
 	void prebuildVariant(int depthPixelFormat, int stencilPixelFormat, int colorAttachmentMask) {
 		this.createVariant(variantKey(depthPixelFormat, stencilPixelFormat, colorAttachmentMask), depthPixelFormat, stencilPixelFormat,
 			colorAttachmentMask, false);
@@ -243,11 +245,15 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 	}
 
 	@Override
+	public boolean isValid() {
+		return true;
+	}
+
 	public boolean isClosed() {
 		return this.closed;
 	}
 
-	@Override
+	/** Releases the PSOs and functions once the GPU is done with them (MetalPipelineCache.clear). */
 	public void close() {
 		if (this.closed) {
 			return;

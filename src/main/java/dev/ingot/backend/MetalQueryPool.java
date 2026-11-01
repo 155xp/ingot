@@ -1,6 +1,6 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.commands.GpuQueryPool;
+import com.mojang.blaze3d.systems.GpuQueryPool;
 import java.util.Objects;
 import java.util.OptionalLong;
 

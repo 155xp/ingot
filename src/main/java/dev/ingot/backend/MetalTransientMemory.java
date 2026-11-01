@@ -1,9 +1,9 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.buffers.TransientMemory;
-import com.mojang.renderpearl.api.device.GpuOutOfMemoryException;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.GpuOutOfMemoryException;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.systems.TransientMemory;
 import dev.ingot.nativ.Mtl;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import java.lang.foreign.MemorySegment;
@@ -22,7 +22,7 @@ import org.lwjgl.system.MemoryUtil;
  * serial that last used a block completes. Semantics follow docs/research/frontend-contracts.md section 10.
  * Owner: core.
  *
- * <p>Three pools, each a bump allocator over 512 KiB blocks with the partial-allocation rules of renderpearl's
+ * <p>Three pools, each a bump allocator over 512 KiB blocks with the partial-allocation rules of vanilla's
  * TransientBlockAllocator:
  * <ul>
  * <li>CPU: malloc'd blocks for {@link #allocateCpu}, reusable as soon as the submit ends.</li>
@@ -244,7 +244,7 @@ public final class MetalTransientMemory implements TransientMemory {
 		}
 	}
 
-	/** Port of renderpearl's TransientBlockAllocator with serial-based recycling and time-based trimming. */
+	/** Port of vanilla's TransientBlockAllocator with serial-based recycling and time-based trimming. */
 	private final class Pool {
 		/** MTLResourceOptions of the blocks, or -1 for malloc'd CPU blocks. */
 		private final int resourceOptions;

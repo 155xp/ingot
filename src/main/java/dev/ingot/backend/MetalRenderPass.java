@@ -1,24 +1,27 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.commands.GpuQueryPool;
-import com.mojang.renderpearl.api.commands.RenderPass;
-import com.mojang.renderpearl.api.commands.RenderPassDescriptor;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.IndexType;
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
-import com.mojang.renderpearl.backend.api.BackendRenderPipeline;
-import com.mojang.renderpearl.backend.api.RenderPassBackend;
-import com.mojang.renderpearl.util.TextureViewAndSampler;
+import com.mojang.blaze3d.IndexType;
+import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.CompiledRenderPipeline;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.systems.GpuQueryPool;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderPassBackend;
+import com.mojang.blaze3d.systems.RenderPassDescriptor;
+import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import dev.ingot.Ingot;
 import dev.ingot.nativ.Mtl;
-import java.lang.foreign.Arena;
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
@@ -29,8 +32,9 @@ import org.lwjgl.system.MemoryUtil;
  * Everything recorded inside one render encoder: cached state, lazy uniform binding, draws, multi-draw loops,
  * triangle-fan conversion. The render encoder itself is begun and ended by MetalCommandEncoder. Owner: passes.
  *
- * <p>This is the hottest code in Ingot. Encoder state is mirrored in Java and only sent when it changes. setUniform
- * just stores the value (the frontend replays every stored uniform after each setPipeline); the next draw binds the
+ * <p>This is the hottest code in Ingot. Encoder state is mirrored in Java and only sent when it changes. setUniform and
+ * bindTexture just store the value by name for the rest of the pass (like the Vulkan backend) and in the current
+ * pipeline's slot for it; setPipeline looks up every binding of the new pipeline by name. The next draw binds the
  * uniforms marked dirty, and only argument-table entries whose handle or offset differ from what the encoder already
  * holds cross the FFM boundary (an offset-only change uses setBufferOffset).
  */
@@ -40,9 +44,10 @@ public final class MetalRenderPass implements RenderPassBackend {
 	private static final int SAMPLER_SLOTS = 16;
 	/** The dirty and missing uniform masks are longs. Metal's argument tables cap real pipelines well below this. */
 	private static final int MAX_UNIFORMS = 64;
-	/** Push constants are at most 128 bytes and always sent padded to that size (MSL structs can be larger). */
-	private static final int PUSH_CONSTANT_BYTES = 128;
 	private static final int FAN_MIN_VERTEX_CAPACITY = 64;
+	/** Indirect command strides: {indexCount, instanceCount, firstIndex, vertexOffset, firstInstance} and {vertexCount, instanceCount, firstVertex, firstInstance}. */
+	private static final int INDIRECT_INDEXED_DRAW_SIZE = 20;
+	private static final int INDIRECT_DRAW_SIZE = 16;
 
 	// Passes never overlap (the frontend allows one open pass, all on the render thread), so every pass reuses these
 	// tables instead of allocating its own. They mirror the current encoder's argument tables, per stage.
@@ -54,9 +59,10 @@ public final class MetalRenderPass implements RenderPassBackend {
 	private static final long[] FRAGMENT_TEXTURES = new long[TEXTURE_SLOTS];
 	private static final long[] VERTEX_SAMPLERS = new long[SAMPLER_SLOTS];
 	private static final long[] FRAGMENT_SAMPLERS = new long[SAMPLER_SLOTS];
-	/** Uniform values by pipeline uniform index, as last given to setUniform. */
+	/** Uniform values by pipeline uniform index: a GpuBufferSlice, or a TextureBinding for sampled textures. */
 	private static final @Nullable Object[] UNIFORMS = new Object[MAX_UNIFORMS];
-	private static final long PUSH_CONSTANTS = Arena.global().allocate(PUSH_CONSTANT_BYTES, 16).address();
+	/** Every value set in this pass, by name: GpuBufferSlices (setUniform) and TextureBindings (bindTexture). */
+	private static final HashMap<String, Object> VALUES = new HashMap<>();
 	/** Pipelines whose draws were skipped, so each problem is logged once. */
 	private static final Set<String> WARNED = new HashSet<>();
 
@@ -132,7 +138,7 @@ public final class MetalRenderPass implements RenderPassBackend {
 		this.stencilPixelFormat = stencilPixelFormat;
 		this.colorAttachmentMask = colorAttachmentMask;
 		this.hasDepth = depthPixelFormat != MetalFormats.PIXEL_INVALID;
-		this.renderArea = descriptor.renderArea();
+		this.renderArea = descriptor.renderArea;
 
 		Arrays.fill(VERTEX_BUFFERS, 0L);
 		Arrays.fill(FRAGMENT_BUFFERS, 0L);
@@ -152,6 +158,7 @@ public final class MetalRenderPass implements RenderPassBackend {
 	public void finish() {
 		// Drop references to the pass's resources; the shared tables are reset by the next pass.
 		Arrays.fill(UNIFORMS, 0, this.uniformCount, null);
+		VALUES.clear();
 	}
 
 	@Override
@@ -171,20 +178,32 @@ public final class MetalRenderPass implements RenderPassBackend {
 	}
 
 	@Override
-	public void setPipeline(BackendRenderPipeline backendPipeline) {
-		MetalRenderPipeline pipeline = (MetalRenderPipeline) backendPipeline;
+	public void setPipeline(RenderPipeline renderPipeline) {
+		CompiledRenderPipeline compiled = this.device.pipeline(renderPipeline);
+		if (!(compiled instanceof MetalRenderPipeline pipeline)) {
+			// The shaders failed to compile (logged when compiling): skip draws until the next setPipeline.
+			if (WARNED.add(renderPipeline.getLocation().toString())) {
+				Ingot.LOGGER.warn("Ingot: skipping draws: pipeline {} is not valid", renderPipeline.getLocation());
+			}
+			this.pipeline = null;
+			this.pipelineState = 0L;
+			return;
+		}
 		if (pipeline == this.pipeline) {
-			// Same uniform layout: the frontend's replay of the stored uniforms marks exactly what may have changed.
+			// Same bindings: setUniform and bindTexture have kept the slots up to date.
 			return;
 		}
 		this.pipeline = pipeline;
 		this.primitive = pipeline.primitiveType();
 		this.fan = pipeline.topology() == PrimitiveTopology.TRIANGLE_FAN;
 
-		// Uniform indices mean different things in different pipelines: forget the old values. The frontend sends
-		// every stored uniform the new pipeline uses right after this; anything it does not send is missing.
+		// Uniform indices mean different things in different pipelines: take every value the new pipeline reads from
+		// what this pass has set by name. Anything not set yet is missing until it is.
 		int count = Math.min(pipeline.uniformCount(), MAX_UNIFORMS);
-		Arrays.fill(UNIFORMS, 0, Math.max(count, this.uniformCount), null);
+		Arrays.fill(UNIFORMS, count, Math.max(count, this.uniformCount), null);
+		for (int i = 0; i < count; i++) {
+			UNIFORMS[i] = VALUES.get(pipeline.uniformName(i));
+		}
 		this.uniformCount = count;
 		this.uniformMask = count == MAX_UNIFORMS ? -1L : (1L << count) - 1;
 		this.dirtyUniforms = this.uniformMask;
@@ -235,29 +254,40 @@ public final class MetalRenderPass implements RenderPassBackend {
 	}
 
 	@Override
-	public void setUniform(int index, @Nullable Object value) {
-		if (index < MAX_UNIFORMS) {
-			UNIFORMS[index] = value;
-			this.dirtyUniforms |= 1L << index;
+	public void bindTexture(String name, @Nullable GpuTextureView textureView, @Nullable GpuSampler sampler) {
+		if (textureView != null && sampler != null) {
+			this.setValue(name, new TextureBinding((MetalTextureView) textureView, (MetalSampler) sampler));
+		} else if (textureView == null && sampler == null) {
+			this.setValue(name, null);
+		} else {
+			throw new IllegalArgumentException("A texture binding needs both a texture view and a sampler, or neither");
 		}
 	}
 
 	@Override
-	public void pushConstants(ByteBuffer value) {
-		int stages = this.pipeline.pushConstantStages();
-		if (stages == 0) {
-			return;
-		}
-		int length = Math.min(value.remaining(), PUSH_CONSTANT_BYTES);
-		if (value.isDirect()) {
-			MemoryUtil.memCopy(MemoryUtil.memAddress(value), PUSH_CONSTANTS, length);
+	public void setUniform(String name, GpuBuffer value) {
+		this.setValue(name, value.slice());
+	}
+
+	@Override
+	public void setUniform(String name, GpuBufferSlice value) {
+		this.setValue(name, value);
+	}
+
+	private void setValue(String name, @Nullable Object value) {
+		if (value != null) {
+			VALUES.put(name, value);
 		} else {
-			for (int i = 0, position = value.position(); i < length; i++) {
-				MemoryUtil.memPutByte(PUSH_CONSTANTS + i, value.get(position + i));
+			VALUES.remove(name);
+		}
+		MetalRenderPipeline pipeline = this.pipeline;
+		if (pipeline != null) {
+			int index = pipeline.uniformIndex(name);
+			if (index >= 0 && index < MAX_UNIFORMS) {
+				UNIFORMS[index] = value;
+				this.dirtyUniforms |= 1L << index;
 			}
 		}
-		// setBytes copies at call time, so the scratch can be reused immediately.
-		Mtl.renderSetBytes(this.encoderHandle, stages, PUSH_CONSTANTS, PUSH_CONSTANT_BYTES, MetalRenderPipeline.PUSH_CONSTANT_SLOT);
 	}
 
 	@Override
@@ -357,7 +387,22 @@ public final class MetalRenderPass implements RenderPassBackend {
 			this.drawIndirectFans(buffer, commands.offset(), drawCount, true);
 		} else {
 			Mtl.renderDrawIndexedIndirect(this.encoderHandle, this.primitive, this.indexType, this.indexHandle, 0L, buffer.handle(),
-				commands.offset(), drawCount, RenderPass.INDIRECT_INDEXED_DRAW_SIZE);
+				commands.offset(), drawCount, INDIRECT_INDEXED_DRAW_SIZE);
+		}
+	}
+
+	@Override
+	public <T> void drawMultipleIndexed(Collection<RenderPass.Draw<T>> draws, @Nullable GpuBuffer defaultIndexBuffer, @Nullable IndexType defaultIndexType,
+										Collection<String> dynamicUniforms, T uniformArgument) {
+		for (RenderPass.Draw<T> draw : draws) {
+			BiConsumer<T, RenderPass.UniformUploader> uploader = draw.uniformUploaderConsumer();
+			if (uploader != null) {
+				uploader.accept(uniformArgument, this::setUniform);
+			}
+			this.setIndexBuffer(draw.indexBuffer() != null ? draw.indexBuffer() : defaultIndexBuffer,
+				draw.indexType() != null ? draw.indexType() : defaultIndexType);
+			this.setVertexBuffer(draw.slot(), draw.vertexBuffer().slice());
+			this.drawIndexed(draw.indexCount(), 1, draw.firstIndex(), draw.baseVertex(), 0);
 		}
 	}
 
@@ -414,7 +459,7 @@ public final class MetalRenderPass implements RenderPassBackend {
 		if (this.fan) {
 			this.drawIndirectFans(buffer, commands.offset(), drawCount, false);
 		} else {
-			Mtl.renderDrawIndirect(this.encoderHandle, this.primitive, buffer.handle(), commands.offset(), drawCount, RenderPass.INDIRECT_DRAW_SIZE);
+			Mtl.renderDrawIndirect(this.encoderHandle, this.primitive, buffer.handle(), commands.offset(), drawCount, INDIRECT_DRAW_SIZE);
 		}
 	}
 
@@ -452,7 +497,8 @@ public final class MetalRenderPass implements RenderPassBackend {
 		}
 		this.missingUniforms = missing;
 		if (missing != 0L && WARNED.add(pipeline.name())) {
-			Ingot.LOGGER.warn("Ingot: skipping draws: pipeline {} has no value for uniform {}", pipeline.name(), Long.numberOfTrailingZeros(missing));
+			Ingot.LOGGER.warn("Ingot: skipping draws: pipeline {} has no value for {}", pipeline.name(),
+				pipeline.uniformName(Long.numberOfTrailingZeros(missing)));
 		}
 	}
 
@@ -484,11 +530,11 @@ public final class MetalRenderPass implements RenderPassBackend {
 				this.bindTexture(stages, view, pipeline.uniformSlot(index));
 			}
 			case COMBINED_IMAGE_SAMPLER -> {
-				if (!(value instanceof TextureViewAndSampler pair)) {
+				if (!(value instanceof TextureBinding pair)) {
 					return false;
 				}
-				this.bindTexture(stages, ((MetalTextureView) pair.view()).handle(), pipeline.uniformSlot(index));
-				this.bindSampler(stages, ((MetalSampler) pair.sampler()).handle(), pipeline.uniformSamplerSlot(index));
+				this.bindTexture(stages, pair.view().handle(), pipeline.uniformSlot(index));
+				this.bindSampler(stages, pair.sampler().handle(), pipeline.uniformSamplerSlot(index));
 			}
 		}
 		return true;
@@ -617,13 +663,13 @@ public final class MetalRenderPass implements RenderPassBackend {
 		long at = contents + offset;
 		if (indexed) {
 			// {indexCount, instanceCount, firstIndex, vertexOffset, firstInstance}
-			for (int i = 0; i < drawCount; i++, at += RenderPass.INDIRECT_INDEXED_DRAW_SIZE) {
+			for (int i = 0; i < drawCount; i++, at += INDIRECT_INDEXED_DRAW_SIZE) {
 				this.drawIndexedFan((long) MemoryUtil.memGetInt(at + 8) * this.indexSize, MemoryUtil.memGetInt(at), MemoryUtil.memGetInt(at + 4),
 					MemoryUtil.memGetInt(at + 12), MemoryUtil.memGetInt(at + 16));
 			}
 		} else {
 			// {vertexCount, instanceCount, firstVertex, firstInstance}
-			for (int i = 0; i < drawCount; i++, at += RenderPass.INDIRECT_DRAW_SIZE) {
+			for (int i = 0; i < drawCount; i++, at += INDIRECT_DRAW_SIZE) {
 				this.drawFan(MemoryUtil.memGetInt(at), MemoryUtil.memGetInt(at + 4), MemoryUtil.memGetInt(at + 8), MemoryUtil.memGetInt(at + 12));
 			}
 		}
@@ -680,5 +726,9 @@ public final class MetalRenderPass implements RenderPassBackend {
 		if (WARNED.add(pipeline.name())) {
 			Ingot.LOGGER.warn("Ingot: skipping draws: pipeline {} {}", pipeline.name(), problem);
 		}
+	}
+
+	/** A sampled texture as given to bindTexture. */
+	private record TextureBinding(MetalTextureView view, MetalSampler sampler) {
 	}
 }

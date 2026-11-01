@@ -67,8 +67,10 @@ public class PowerModeTest implements FabricClientGameTest {
 			// The game-test harness pins the framebuffer to 854x480 when the client starts; a resolution switch re-reads
 			// the window's real size in pixels, which is the reference here.
 			int[] full = context.computeOnClient(mc -> {
-				var real = mc.getWindow().queryFramebufferSize();
-				return new int[]{real.width(), real.height(), mc.getWindow().getGuiScale()};
+				int[] width = new int[1];
+				int[] height = new int[1];
+				org.lwjgl.glfw.GLFW.glfwGetFramebufferSize(mc.getWindow().handle(), width, height);
+				return new int[]{width[0], height[0], mc.getWindow().getGuiScale()};
 			});
 			report.add("performance/full: window pixels " + full[0] + "x" + full[1] + ", gui scale " + full[2] + ", battery=" + context.computeOnClient(mc -> PowerPolicy.isBatteryMode()));
 			shot(context, out, "03-performance-full");

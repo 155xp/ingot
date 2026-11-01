@@ -1,12 +1,12 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.backend.common.BaseGpuTextureView;
+import com.mojang.blaze3d.textures.GpuTextureView;
 
 /**
  * A view over a mip range of a {@link MetalTexture} (cube views for cube textures). Owner: core. A view that covers
  * every mip has no native object of its own and binds the texture itself.
  */
-public class MetalTextureView extends BaseGpuTextureView {
+public class MetalTextureView extends GpuTextureView {
 	/** The MTLTexture view, or 0 when the view covers the whole texture. */
 	private final long viewHandle;
 	private boolean closed;

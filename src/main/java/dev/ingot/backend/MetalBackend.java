@@ -1,24 +1,24 @@
 package dev.ingot.backend;
 
-import com.mojang.renderpearl.api.device.BackendCreationException;
-import com.mojang.renderpearl.api.device.GpuBackend;
-import com.mojang.renderpearl.api.device.GpuDebugOptions;
-import com.mojang.renderpearl.api.device.GpuDevice;
-import com.mojang.renderpearl.frontend.FrontendGpuDevice;
+import com.mojang.blaze3d.GLFWErrorCapture;
+import com.mojang.blaze3d.shaders.GpuDebugOptions;
+import com.mojang.blaze3d.shaders.ShaderSource;
+import com.mojang.blaze3d.systems.BackendCreationException;
+import com.mojang.blaze3d.systems.GpuBackend;
+import com.mojang.blaze3d.systems.GpuDevice;
 import dev.ingot.Ingot;
 import dev.ingot.IngotConfig;
 import dev.ingot.nativ.Mtl;
+import java.util.Locale;
 import net.minecraft.client.PreferredGraphicsApi;
 import org.jspecify.annotations.Nullable;
-import org.lwjgl.sdl.SDLVideo;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * Entry point Minecraft sees: tried before the vanilla backends on macOS. Every failure becomes a
  * BackendCreationException so Minecraft moves on to OpenGL/Vulkan exactly as it would without Ingot.
  */
 public final class MetalBackend implements GpuBackend {
-	private boolean libraryLoaded;
-
 	/** Whether Metal should be put in front of the vanilla backends for this preference. CONTRACT */
 	public static boolean shouldTry(PreferredGraphicsApi preference) {
 		return Ingot.isMacOs() && preference == PreferredGraphicsApi.DEFAULT && IngotConfig.get().enabled;
@@ -30,47 +30,46 @@ public final class MetalBackend implements GpuBackend {
 	}
 
 	@Override
-	public void loadLibrary() throws BackendCreationException {
-		if (this.libraryLoaded) {
-			return;
-		}
+	public void setWindowHints() {
+		// No OpenGL context: the surface puts a CAMetalLayer on the window's content view.
+		GLFW.glfwWindowHint(GLFW.GLFW_CLIENT_API, GLFW.GLFW_NO_API);
+	}
+
+	@Override
+	public void handleWindowCreationErrors(GLFWErrorCapture.@Nullable Error error) throws BackendCreationException {
+		String message = error != null ? String.format(Locale.ROOT, "GLFW_ERROR: 0x%X", error.error()) : "Failed to create a window for Metal";
+		throw new BackendCreationException(message, BackendCreationException.Reason.GLFW_ERROR);
+	}
+
+	private static void loadLibrary() throws BackendCreationException {
 		try {
 			int abi = Mtl.abiVersion();
 			if (abi != Mtl.ABI_VERSION) {
 				throw new BackendCreationException("libingot ABI " + abi + " does not match " + Mtl.ABI_VERSION,
-					BackendCreationException.Reason.PLATFORM_ERROR);
+					BackendCreationException.Reason.OTHER);
 			}
 		} catch (BackendCreationException e) {
 			throw e;
 		} catch (Throwable t) {
-			throw new BackendCreationException("Could not load the Metal bridge (libingot): " + t, BackendCreationException.Reason.PLATFORM_ERROR);
+			throw new BackendCreationException("Could not load the Metal bridge (libingot): " + t, BackendCreationException.Reason.OTHER);
 		}
-		this.libraryLoaded = true;
 	}
 
 	@Override
-	public void unloadLibrary() {
-		// A native library cannot be unloaded from a global arena; nothing to do.
-	}
-
-	@Override
-	public long createWindow(@Nullable String title, int width, int height, long flags) {
-		return SDLVideo.SDL_CreateWindow(title, width, height, flags | SDLVideo.SDL_WINDOW_METAL);
-	}
-
-	@Override
-	public GpuDevice createDevice(GpuDebugOptions debugOptions) throws BackendCreationException {
+	public GpuDevice createDevice(long window, ShaderSource defaultShaderSource, GpuDebugOptions debugOptions, Runnable criticalShaderLoader)
+		throws BackendCreationException {
+		loadLibrary();
 		MetalDevice metalDevice = null;
 		try {
-			metalDevice = new MetalDevice(this, debugOptions);
-			GpuDevice device = new FrontendGpuDevice(metalDevice);
+			metalDevice = new MetalDevice(this, defaultShaderSource, debugOptions);
+			GpuDevice device = new GpuDevice(metalDevice, criticalShaderLoader);
 			Ingot.LOGGER.info("Ingot: Metal backend active");
 			return device;
 		} catch (BackendCreationException e) {
 			throw e;
 		} catch (Throwable t) {
-			// The frontend can fail after the native device exists (encoder, shader compilers); do not keep it alive
-			// next to the backend the game falls back to.
+			// The device can fail after the native device exists (encoder); do not keep it alive next to the backend the
+			// game falls back to.
 			if (metalDevice != null) {
 				try {
 					metalDevice.close();
@@ -79,7 +78,7 @@ public final class MetalBackend implements GpuBackend {
 				}
 			}
 			Ingot.LOGGER.error("Ingot: Metal device creation failed, falling back", t);
-			throw new BackendCreationException("Metal device creation failed: " + t, BackendCreationException.Reason.PLATFORM_ERROR);
+			throw new BackendCreationException("Metal device creation failed: " + t, BackendCreationException.Reason.OTHER);
 		}
 	}
 }
