@@ -235,6 +235,12 @@ public final class MetalRenderPass implements RenderPassBackend {
 	}
 
 	@Override
+	public void nextSubpass() {
+		// Every pass is encoded as its layout's first subpass (MetalCommandEncoder); vanilla never uses more than one.
+		throw new UnsupportedOperationException("Ingot renders single-subpass render passes only");
+	}
+
+	@Override
 	public void setUniform(int index, @Nullable Object value) {
 		if (index < MAX_UNIFORMS) {
 			UNIFORMS[index] = value;

@@ -121,6 +121,11 @@ public final class MetalSurface implements GpuSurfaceBackend {
 	}
 
 	@Override
+	public boolean isDXGI() {
+		return false;
+	}
+
+	@Override
 	public boolean isSuboptimal() {
 		return this.suboptimal;
 	}

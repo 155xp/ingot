@@ -8,15 +8,14 @@ import com.mojang.renderpearl.api.commands.GpuFence;
 import com.mojang.renderpearl.api.commands.GpuQueryPool;
 import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.renderpearl.api.commands.RenderPassDescriptor;
+import com.mojang.renderpearl.api.pipeline.RenderPassLayout;
 import com.mojang.renderpearl.api.textures.GpuTexture;
 import com.mojang.renderpearl.backend.api.CommandEncoderBackend;
 import com.mojang.renderpearl.backend.api.RenderPassBackend;
 import dev.ingot.nativ.Mtl;
+import it.unimi.dsi.fastutil.bytes.ByteList;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalDouble;
 import org.joml.Vector4fc;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
@@ -164,16 +163,16 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 
 	@Override
 	public RenderPassBackend createRenderPass(RenderPassDescriptor descriptor) {
-		List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colors = descriptor.colorAttachments();
-		RenderPassDescriptor.@Nullable Attachment<OptionalDouble> depth = descriptor.depthAttachment();
-		int colorCount = Math.min(colors.size(), Mtl.MAX_COLOR_TARGETS);
+		RenderPassDescriptor.@Nullable Attachment[] colors = colorAttachments(descriptor);
+		RenderPassDescriptor.@Nullable Attachment depth = depthAttachment(descriptor);
+		int colorCount = Math.min(colors.length, Mtl.MAX_COLOR_TARGETS);
 
 		// The viewport is the size of the last color attachment, or of the depth attachment (like Vulkan).
 		int width = 0;
 		int height = 0;
 		boolean sized = false;
 		for (int i = 0; i < colorCount; i++) {
-			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colors.get(i);
+			RenderPassDescriptor.Attachment attachment = colors[i];
 			if (attachment != null) {
 				width = attachment.textureView().getWidth(0);
 				height = attachment.textureView().getHeight(0);
@@ -191,12 +190,12 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		if (PASS_STATS) {
 			this.statPasses++;
 		}
-		boolean merge = this.parkedEncoder != 0L && PASS_MERGING && this.continuesParkedPass(descriptor, colorCount, fullArea);
+		boolean merge = this.parkedEncoder != 0L && PASS_MERGING && this.continuesParkedPass(colors, depth, colorCount, fullArea);
 		if (PASS_STATS && this.statFrames == 300) {
-			this.tracePass(descriptor, colorCount, merge);
+			this.tracePass(descriptor, colors, depth, colorCount, merge);
 		}
 		if (merge) {
-			return this.continueParkedPass(descriptor, width, height);
+			return this.continueParkedPass(descriptor, depth, width, height);
 		}
 		this.endBlit();
 		long buffer = this.commandBuffer();
@@ -209,16 +208,16 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		MemoryUtil.memSet(desc, 0, PASS_DESC_SIZE);
 		int colorAttachmentMask = 0;
 		for (int i = 0; i < colorCount; i++) {
-			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colors.get(i);
+			RenderPassDescriptor.Attachment attachment = colors[i];
 			if (attachment == null) {
 				continue;
 			}
 			MetalTextureView view = (MetalTextureView) attachment.textureView();
 			MetalTexture texture = view.metalTexture();
 			long slot = desc + (long) i * COLOR_STRIDE;
-			Optional<Vector4fc> clear = attachment.clearValue();
-			if (fullArea && clear.isPresent()) {
-				Vector4fc color = clear.get();
+			RenderPassDescriptor.Attachment.ClearValue clear = attachment.clearValue();
+			if (fullArea && clear != null) {
+				Vector4fc color = clear.color();
 				putColorAttachment(slot, texture, view.baseMipLevel(), MetalFormats.LOAD_CLEAR, color.x(), color.y(), color.z(), color.w());
 			} else if (texture.clearPending) {
 				putColorAttachment(slot, texture, view.baseMipLevel(), MetalFormats.LOAD_CLEAR, texture.clearRed, texture.clearGreen, texture.clearBlue,
@@ -233,9 +232,9 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		if (depth != null) {
 			MetalTextureView view = (MetalTextureView) depth.textureView();
 			MetalTexture texture = view.metalTexture();
-			OptionalDouble clear = depth.clearValue();
-			if (fullArea && clear.isPresent()) {
-				putDepthStencilAttachment(desc, texture, view.baseMipLevel(), MetalFormats.LOAD_CLEAR, (float) clear.getAsDouble());
+			RenderPassDescriptor.Attachment.ClearValue clear = depth.clearValue();
+			if (fullArea && clear != null) {
+				putDepthStencilAttachment(desc, texture, view.baseMipLevel(), MetalFormats.LOAD_CLEAR, clear.depth());
 			} else if (texture.clearPending) {
 				putDepthStencilAttachment(desc, texture, view.baseMipLevel(), MetalFormats.LOAD_CLEAR, texture.clearDepth);
 			} else {
@@ -259,7 +258,7 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		this.pendingClearCount = 0;
 
 		this.renderEncoder = encoderHandle;
-		this.rememberAttachments(descriptor, colorCount);
+		this.rememberAttachments(colors, depth, colorCount);
 		MetalRenderPass pass = new MetalRenderPass(this.device, this, encoderHandle, descriptor, depthPixelFormat, stencilPixelFormat,
 			colorAttachmentMask, width, height);
 		this.renderPass = pass;
@@ -267,15 +266,15 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	}
 
 	/** -Dingot.debugPassStats: one line per pass of one frame, with what kept it from continuing the parked encoder. */
-	private void tracePass(RenderPassDescriptor descriptor, int colorCount, boolean merge) {
+	private void tracePass(RenderPassDescriptor descriptor, RenderPassDescriptor.@Nullable Attachment[] colors,
+						   RenderPassDescriptor.@Nullable Attachment depth, int colorCount, boolean merge) {
 		StringBuilder line = new StringBuilder("Ingot pass trace: ").append(descriptor.label().get()).append(" [");
 		for (int i = 0; i < colorCount; i++) {
-			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = descriptor.colorAttachments().get(i);
+			RenderPassDescriptor.Attachment attachment = colors[i];
 			line.append(attachment == null ? "-" : attachment.textureView().texture().getLabel()
-				+ (attachment.clearValue().isPresent() ? "(clear)" : "")).append(' ');
+				+ (attachment.clearValue() != null ? "(clear)" : "")).append(' ');
 		}
-		RenderPassDescriptor.Attachment<OptionalDouble> depth = descriptor.depthAttachment();
-		line.append("depth=").append(depth == null ? "-" : depth.textureView().texture().getLabel() + (depth.clearValue().isPresent() ? "(clear)" : ""));
+		line.append("depth=").append(depth == null ? "-" : depth.textureView().texture().getLabel() + (depth.clearValue() != null ? "(clear)" : ""));
 		line.append("] ");
 		if (merge) {
 			line.append("CONTINUED");
@@ -291,11 +290,11 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		dev.ingot.Ingot.LOGGER.info(line.toString());
 	}
 
-	private void rememberAttachments(RenderPassDescriptor descriptor, int colorCount) {
-		List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colors = descriptor.colorAttachments();
+	private void rememberAttachments(RenderPassDescriptor.@Nullable Attachment[] colors, RenderPassDescriptor.@Nullable Attachment depth,
+									 int colorCount) {
 		Arrays.fill(this.parkedColors, null);
 		for (int i = 0; i < colorCount; i++) {
-			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colors.get(i);
+			RenderPassDescriptor.Attachment attachment = colors[i];
 			if (attachment != null) {
 				MetalTextureView view = (MetalTextureView) attachment.textureView();
 				this.parkedColors[i] = view.metalTexture();
@@ -303,7 +302,6 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 			}
 		}
 		this.parkedColorCount = colorCount;
-		RenderPassDescriptor.Attachment<OptionalDouble> depth = descriptor.depthAttachment();
 		if (depth != null) {
 			MetalTextureView view = (MetalTextureView) depth.textureView();
 			this.parkedDepth = view.metalTexture();
@@ -321,7 +319,8 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	 * pass has at most one color attachment. Nothing else can have been encoded since the parked pass: every other command ends the parked
 	 * encoder first.
 	 */
-	private boolean continuesParkedPass(RenderPassDescriptor descriptor, int colorCount, boolean fullArea) {
+	private boolean continuesParkedPass(RenderPassDescriptor.@Nullable Attachment[] colors, RenderPassDescriptor.@Nullable Attachment depth,
+										int colorCount, boolean fullArea) {
 		if (colorCount != this.parkedColorCount) {
 			return false;
 		}
@@ -331,9 +330,8 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 				return false;
 			}
 		}
-		List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colors = descriptor.colorAttachments();
 		for (int i = 0; i < colorCount; i++) {
-			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colors.get(i);
+			RenderPassDescriptor.Attachment attachment = colors[i];
 			if (attachment == null) {
 				if (this.parkedColors[i] != null) {
 					return false;
@@ -341,17 +339,16 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 				continue;
 			}
 			MetalTextureView view = (MetalTextureView) attachment.textureView();
-			if (attachment.clearValue().isPresent() || view.metalTexture() != this.parkedColors[i] || view.baseMipLevel() != this.parkedColorLevels[i]) {
+			if (attachment.clearValue() != null || view.metalTexture() != this.parkedColors[i] || view.baseMipLevel() != this.parkedColorLevels[i]) {
 				return false;
 			}
 		}
-		RenderPassDescriptor.Attachment<OptionalDouble> depth = descriptor.depthAttachment();
 		if (depth == null) {
 			return this.parkedDepth == null;
 		}
 		MetalTextureView view = (MetalTextureView) depth.textureView();
 		// The in-pass clear covers the whole attachment, like a load action, so a clear of a smaller render area cannot use it.
-		return (depth.clearValue().isEmpty() || fullArea && this.clearsDepthInPass()) && view.metalTexture() == this.parkedDepth
+		return (depth.clearValue() == null || fullArea && this.clearsDepthInPass()) && view.metalTexture() == this.parkedDepth
 			&& view.baseMipLevel() == this.parkedDepthLevel;
 	}
 
@@ -374,7 +371,8 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	 * that the previous pass may have changed goes back to the defaults: depth-stencil state, depth bias, cull and fill
 	 * mode, winding and scissor. Its constructor sets the viewport; bindings are re-sent because its caches start empty.
 	 */
-	private RenderPassBackend continueParkedPass(RenderPassDescriptor descriptor, int width, int height) {
+	private RenderPassBackend continueParkedPass(RenderPassDescriptor descriptor, RenderPassDescriptor.@Nullable Attachment attachment, int width,
+												 int height) {
 		long encoderHandle = this.parkedEncoder;
 		this.parkedEncoder = 0L;
 		if (PASS_STATS) {
@@ -388,12 +386,11 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 			depthPixelFormat = format.hasDepthAspect() ? depth.pixelFormat() : 0;
 			stencilPixelFormat = format.hasStencilAspect() ? depth.pixelFormat() : 0;
 			// A depth clear of this attachment: requested by the descriptor (it wins, as a load action would), else pending.
-			RenderPassDescriptor.Attachment<OptionalDouble> attachment = descriptor.depthAttachment();
 			boolean clear = depth.clearPending;
 			float clearDepth = depth.clearDepth;
-			if (attachment != null && attachment.clearValue().isPresent()) {
+			if (attachment != null && attachment.clearValue() != null) {
 				clear = true;
-				clearDepth = (float) attachment.clearValue().getAsDouble();
+				clearDepth = attachment.clearValue().depth();
 			}
 			if (depth.clearPending) {
 				this.dropPendingClear(depth);
@@ -431,22 +428,22 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	}
 
 	/** Clears requested for a render area smaller than the attachments: scissored quads before the pass loads them. */
-	private void clearRenderArea(long buffer, List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colors, int colorCount,
-								 RenderPassDescriptor.@Nullable Attachment<OptionalDouble> depth, RenderPass.RenderArea area) {
+	private void clearRenderArea(long buffer, RenderPassDescriptor.@Nullable Attachment[] colors, int colorCount,
+								 RenderPassDescriptor.@Nullable Attachment depth, RenderPass.RenderArea area) {
 		for (int i = 0; i < colorCount; i++) {
-			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colors.get(i);
-			if (attachment != null && attachment.clearValue().isPresent()) {
+			RenderPassDescriptor.Attachment attachment = colors[i];
+			if (attachment != null && attachment.clearValue() != null) {
 				MetalTextureView view = (MetalTextureView) attachment.textureView();
-				Vector4fc color = attachment.clearValue().get();
+				Vector4fc color = attachment.clearValue().color();
 				Mtl.utilClearRegion(this.deviceHandle, buffer, view.metalTexture().handle(), 0L, view.baseMipLevel(), area.x(), area.y(), area.width(),
 					area.height(), color.x(), color.y(), color.z(), color.w(), 0.0F, CLEAR_REGION_COLOR);
 			}
 		}
-		if (depth != null && depth.clearValue().isPresent()) {
+		if (depth != null && depth.clearValue() != null) {
 			MetalTextureView view = (MetalTextureView) depth.textureView();
 			if (view.metalTexture().getFormat().hasDepthAspect()) {
 				Mtl.utilClearRegion(this.deviceHandle, buffer, 0L, view.metalTexture().handle(), view.baseMipLevel(), area.x(), area.y(), area.width(),
-					area.height(), 0.0F, 0.0F, 0.0F, 0.0F, (float) depth.clearValue().getAsDouble(), CLEAR_REGION_DEPTH);
+					area.height(), 0.0F, 0.0F, 0.0F, 0.0F, depth.clearValue().depth(), CLEAR_REGION_DEPTH);
 			}
 		}
 	}
@@ -513,26 +510,6 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	public void clearColorAndDepthTextures(GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth) {
 		this.clearColorTexture(colorTexture, clearColor);
 		this.clearDepthTexture(depthTexture, clearDepth);
-	}
-
-	@Override
-	public void clearColorAndDepthTextures(GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth,
-										   int regionX, int regionY, int regionWidth, int regionHeight, int mipLevel) {
-		MetalTexture color = (MetalTexture) colorTexture;
-		MetalTexture depth = (MetalTexture) depthTexture;
-		int width = color.getWidth(mipLevel);
-		int height = color.getHeight(mipLevel);
-		if (regionX == 0 && regionY == 0 && regionWidth == width && regionHeight == height && color.getMipLevels() == 1
-			&& depth.getWidth(0) == width && depth.getHeight(0) == height) {
-			// Covers both single-mip textures entirely: an ordinary (foldable) clear.
-			this.clearColorAndDepthTextures(colorTexture, clearColor, depthTexture, clearDepth);
-			return;
-		}
-		this.flushPendingClear(color);
-		this.flushPendingClear(depth);
-		this.endBlit();
-		Mtl.utilClearRegion(this.deviceHandle, this.commandBuffer(), color.handle(), depth.handle(), mipLevel, regionX, regionY, regionWidth,
-			regionHeight, clearColor.x(), clearColor.y(), clearColor.z(), clearColor.w(), (float) clearDepth, CLEAR_REGION_COLOR | CLEAR_REGION_DEPTH);
 	}
 
 	@Override
@@ -611,13 +588,7 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	}
 
 	@Override
-	public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel) {
-		this.copyTextureToBuffer(source, destination, offset, callback, mipLevel, 0, 0, source.getWidth(mipLevel), source.getHeight(mipLevel));
-	}
-
-	@Override
-	public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel, int x, int y,
-									int width, int height) {
+	public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, int mipLevel, int x, int y, int width, int height) {
 		MetalTexture texture = (MetalTexture) source;
 		MetalBuffer target = (MetalBuffer) destination;
 		GpuFormat format = texture.getFormat();
@@ -631,7 +602,6 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 			Mtl.blitSynchronize(blit, target.handle());
 		}
 		target.lastUseSerial = this.device.currentSerial();
-		this.device.runLater(callback);
 	}
 
 	@Override
@@ -822,15 +792,32 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	}
 
 	private static boolean attaches(RenderPassDescriptor descriptor, MetalTexture texture) {
-		List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colors = descriptor.colorAttachments();
-		for (int i = 0; i < colors.size(); i++) {
-			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colors.get(i);
-			if (attachment != null && attachment.textureView().texture() == texture) {
+		for (RenderPassDescriptor.Attachment attachment : descriptor.attachments()) {
+			if (attachment.textureView().texture() == texture) {
 				return true;
 			}
 		}
-		RenderPassDescriptor.Attachment<OptionalDouble> depth = descriptor.depthAttachment();
-		return depth != null && depth.textureView().texture() == texture;
+		return false;
+	}
+
+	/**
+	 * The color attachments of the layout's first subpass by color slot, null for unused slots. Ingot renders every pass as
+	 * a single subpass (nextSubpass is unsupported); vanilla only uses single-subpass layouts.
+	 */
+	private static RenderPassDescriptor.@Nullable Attachment[] colorAttachments(RenderPassDescriptor descriptor) {
+		ByteList slots = descriptor.layout().subpass(0).colorAttachments();
+		RenderPassDescriptor.Attachment[] colors = new RenderPassDescriptor.Attachment[slots.size()];
+		for (int i = 0; i < colors.length; i++) {
+			int index = slots.getByte(i);
+			colors[i] = index != RenderPassLayout.ATTACHMENT_UNUSED ? descriptor.attachments().get(index) : null;
+		}
+		return colors;
+	}
+
+	/** The depth/stencil attachment of the layout's first subpass, or null. */
+	private static RenderPassDescriptor.@Nullable Attachment depthAttachment(RenderPassDescriptor descriptor) {
+		int index = descriptor.layout().subpass(0).depthStencilAttachment();
+		return index != RenderPassLayout.ATTACHMENT_UNUSED ? descriptor.attachments().get(index) : null;
 	}
 
 	/** Whole-texture clear of every mip: one empty render pass per mip with clear load actions. */

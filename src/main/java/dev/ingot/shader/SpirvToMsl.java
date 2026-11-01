@@ -1,8 +1,8 @@
 package dev.ingot.shader;
 
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
+import com.mojang.renderpearl.api.pipeline.CompiledRenderPipeline;
 import com.mojang.renderpearl.api.pipeline.ShaderType;
-import com.mojang.renderpearl.backend.api.SpvModule;
+import com.mojang.renderpearl.api.pipeline.SpvModule;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +18,7 @@ import static org.lwjgl.util.spvc.Spvc.*;
  * prototype tools/shader-xlate/src/MslTranslator.java with its default options; for the same input both produce
  * byte-identical MSL. Owner: pipelines.
  *
- * <p>The frontend has already rewritten every resource to descriptor set 0, binding = index in
+ * <p>The pipeline builder has already rewritten every resource to descriptor set 0, binding = index in
  * {@code CreateInfo.uniforms()}. Both stages share one Metal argument-table layout (compact numbering):
  * <pre>
  *   [[buffer(0..13)]]   uniform buffers: k-th UNIFORM_BUFFER of the pipeline → buffer(k)
@@ -71,7 +71,7 @@ public final class SpirvToMsl {
 	}
 
 	/** Compact slot numbering for a pipeline's uniforms; list index i is SPIR-V binding i. */
-	public static List<Slot> assignSlots(List<BindGroupLayout.UniformDescription> uniforms) throws TranslationException {
+	public static List<Slot> assignSlots(List<CompiledRenderPipeline.CreateInfo.Uniform> uniforms) throws TranslationException {
 		if (uniforms.size() > MAX_UNIFORMS) {
 			throw new TranslationException(uniforms.size() + " uniforms (at most " + MAX_UNIFORMS + " are supported)");
 		}
@@ -79,11 +79,17 @@ public final class SpirvToMsl {
 		int buffers = 0;
 		int textures = 0;
 		int samplers = 0;
-		for (BindGroupLayout.UniformDescription uniform : uniforms) {
+		for (int i = 0; i < uniforms.size(); i++) {
+			CompiledRenderPipeline.CreateInfo.Uniform uniform = uniforms.get(i);
+			if (uniform.binding() != i) {
+				throw new TranslationException("uniform " + uniform.name() + " has binding " + uniform.binding() + " at index " + i);
+			}
 			Slot slot = switch (uniform.type()) {
 				case UNIFORM_BUFFER -> new Slot(buffers++, -1, -1);
 				case COMBINED_IMAGE_SAMPLER -> new Slot(-1, textures++, samplers++);
 				case TEXEL_BUFFER -> new Slot(-1, textures++, -1);
+				// Subpass inputs; vanilla never declares one (single-subpass render passes only).
+				case INPUT_ATTACHMENT -> throw new TranslationException("input attachment " + uniform.name() + " is not supported");
 			};
 			if (slot.buffer() >= MAX_UNIFORM_BUFFERS) {
 				throw new TranslationException("too many uniform buffers: " + uniform.name() + " would need buffer(" + slot.buffer() + ")");
@@ -101,7 +107,8 @@ public final class SpirvToMsl {
 	 *
 	 * @param slots the pipeline's {@link #assignSlots} result (the same list for both stages)
 	 */
-	public static Stage translate(SpvModule module, String entryPoint, List<Slot> slots) throws TranslationException {
+	public static Stage translate(SpvModule module, List<Slot> slots) throws TranslationException {
+		String entryPoint = module.entryPoint();
 		boolean vertex = module.type() == ShaderType.VERTEX;
 		int model = vertex ? EXECUTION_MODEL_VERTEX : EXECUTION_MODEL_FRAGMENT;
 		IntBuffer words = module.spv().asIntBuffer();

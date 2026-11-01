@@ -59,11 +59,11 @@ public final class MetalBackend implements GpuBackend {
 	}
 
 	@Override
-	public GpuDevice createDevice(GpuDebugOptions debugOptions) throws BackendCreationException {
+	public GpuDevice createDevice(String applicationName, int applicationVersion, GpuDebugOptions debugOptions) throws BackendCreationException {
 		MetalDevice metalDevice = null;
 		try {
 			metalDevice = new MetalDevice(this, debugOptions);
-			GpuDevice device = new FrontendGpuDevice(metalDevice);
+			GpuDevice device = new FrontendGpuDevice(metalDevice, debugOptions);
 			Ingot.LOGGER.info("Ingot: Metal backend active");
 			return device;
 		} catch (BackendCreationException e) {

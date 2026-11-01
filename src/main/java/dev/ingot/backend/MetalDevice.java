@@ -13,6 +13,7 @@ import com.mojang.renderpearl.api.device.GpuDeviceLossException;
 import com.mojang.renderpearl.api.device.GpuOutOfMemoryException;
 import com.mojang.renderpearl.api.device.HintsAndWorkarounds;
 import com.mojang.renderpearl.api.pipeline.CompareOp;
+import com.mojang.renderpearl.api.pipeline.CompiledRenderPipeline;
 import com.mojang.renderpearl.api.pipeline.DepthStencilState;
 import com.mojang.renderpearl.api.textures.AddressMode;
 import com.mojang.renderpearl.api.textures.FilterMode;
@@ -141,6 +142,7 @@ public final class MetalDevice implements GpuDeviceBackend {
 
 	/** The values documented in docs/ARCHITECTURE.md "Device info reported". */
 	private static DeviceInfo createDeviceInfo(MetalCaps caps, boolean mac2) {
+		boolean dxgiSurface = false;
 		boolean wireframeFillMode = true;
 		boolean shaderDrawParameters = true;
 		boolean multiDrawDirectInterleaved = true;
@@ -149,8 +151,8 @@ public final class MetalDevice implements GpuDeviceBackend {
 		boolean drawIndirect = true;
 		boolean nonZeroFirstInstance = true;
 		boolean persistentMapping = true;
-		DeviceFeatures features = new DeviceFeatures(wireframeFillMode, shaderDrawParameters, multiDrawDirectInterleaved, multiDrawDirectSeparate,
-			multiDrawIndirect, drawIndirect, nonZeroFirstInstance, persistentMapping);
+		DeviceFeatures features = new DeviceFeatures(dxgiSurface, wireframeFillMode, shaderDrawParameters, multiDrawDirectInterleaved,
+			multiDrawDirectSeparate, multiDrawIndirect, drawIndirect, nonZeroFirstInstance, persistentMapping);
 
 		int maxAnisotropy = 16;
 		int maxMultiDrawDirectInterleavedDrawCount = 1 << 20;
@@ -158,7 +160,7 @@ public final class MetalDevice implements GpuDeviceBackend {
 		// draws (ChunkSectionsToRender.DrawSeparate) instead of one indirect draw per section.
 		int maxDrawIndirectDrawCount = "false".equals(System.getProperty("ingot.multiDrawIndirect")) ? 0 : Integer.MAX_VALUE;
 		DeviceLimits limits = new DeviceLimits(maxAnisotropy, caps.uniformOffsetAlignment(), caps.maxTextureSize(), caps.maxBufferLength(),
-			maxMultiDrawDirectInterleavedDrawCount, Mtl.MAX_COLOR_TARGETS, maxDrawIndirectDrawCount);
+			maxMultiDrawDirectInterleavedDrawCount, maxDrawIndirectDrawCount);
 
 		// writeToBufferIsSlow selects the persistently mapped chunk staging ring, ideal for unified memory. Not on
 		// non-unified devices: there the ring is Managed and stays mapped, so every commit would report (and upload)
@@ -288,7 +290,8 @@ public final class MetalDevice implements GpuDeviceBackend {
 	}
 
 	@Override
-	public GpuSurfaceBackend createSurface(long windowHandle, BooleanSupplier isIconified) {
+	public GpuSurfaceBackend createSurface(long windowHandle, BooleanSupplier isIconified, boolean dxgi) {
+		// dxgi is never requested: the device reports no dxgiSurface feature.
 		return new MetalSurface(this, windowHandle, isIconified);
 	}
 
@@ -416,7 +419,7 @@ public final class MetalDevice implements GpuDeviceBackend {
 	}
 
 	@Override
-	public BackendRenderPipeline.Pending compilePipeline(BackendRenderPipeline.CreateInfo pipelineCreateInfo) {
+	public BackendRenderPipeline.Pending compilePipeline(CompiledRenderPipeline.CreateInfo pipelineCreateInfo) {
 		return MetalPipelineCompiler.compile(this, pipelineCreateInfo);
 	}
 

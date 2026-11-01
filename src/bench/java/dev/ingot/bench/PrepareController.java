@@ -331,7 +331,7 @@ final class PrepareController implements Bench.Controller {
 			for (int j = 0; j < n; j++) {
 				int x = spawn.getX() - range + i * step;
 				int z = spawn.getZ() - range + j * step;
-				grid[i][j] = category(biomeId(level.getUncachedNoiseBiome(x >> 2, 64 >> 2, z >> 2)));
+				grid[i][j] = category(biomeId(level.getUncachedBiome(x, 64, z)));
 			}
 		}
 		record Candidate(int x, int z, double forest, double plains, double water, double mountain, double score) {

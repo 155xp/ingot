@@ -1,8 +1,8 @@
 package dev.ingot.backend;
 
 import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.CompiledRenderPipeline;
 import com.mojang.renderpearl.api.pipeline.DepthStencilState;
 import com.mojang.renderpearl.api.pipeline.PolygonMode;
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
@@ -48,16 +48,18 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 	/** The IngotPipelineDesc the default variant was built from; variants rewrite its attachment fields. */
 	private final MemorySegment desc;
 	private final List<@Nullable ColorTargetState> colorTargets;
-	// PSO variants, render thread only once published. Index 0 is the default variant (plus the D32 one for depth-less
-	// pipelines, built by the compiling worker); a 0 state is a variant that failed to build.
+	/** Format of each color slot of the subpass the pipeline was compiled for. */
+	private final @Nullable GpuFormat[] colorFormats;
+	// PSO variants, render thread only once published. Index 0 is the default variant (the subpass's attachments, built by
+	// the compiling worker); a 0 state is a variant that failed to build.
 	private long[] variantKeys = new long[2];
 	private long[] variantStates = new long[2];
 	private int variantCount;
 	private boolean closed;
 
-	MetalRenderPipeline(MetalDevice device, BackendRenderPipeline.CreateInfo createInfo, List<SpirvToMsl.Slot> slots, SpirvToMsl.Stage vertex,
-						SpirvToMsl.@Nullable Stage fragment, long vertexFunction, long fragmentFunction, MemorySegment desc, long defaultKey,
-						long defaultState) {
+	MetalRenderPipeline(MetalDevice device, CompiledRenderPipeline.CreateInfo createInfo, @Nullable GpuFormat[] colorFormats,
+						List<SpirvToMsl.Slot> slots, SpirvToMsl.Stage vertex, SpirvToMsl.@Nullable Stage fragment, long vertexFunction,
+						long fragmentFunction, MemorySegment desc, long defaultKey, long defaultState) {
 		this.device = device;
 		this.name = createInfo.name();
 		this.topology = createInfo.primitiveTopology();
@@ -75,7 +77,7 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 		this.uniformStages = new int[count];
 		this.texelBufferFormats = new GpuFormat[count];
 		for (int i = 0; i < count; i++) {
-			BindGroupLayout.UniformDescription uniform = createInfo.uniforms().get(i);
+			CompiledRenderPipeline.CreateInfo.Uniform uniform = createInfo.uniforms().get(i);
 			SpirvToMsl.Slot slot = slots.get(i);
 			this.uniformTypes[i] = uniform.type();
 			this.uniformSlots[i] = uniform.type() == UniformType.UNIFORM_BUFFER ? slot.buffer() : slot.texture();
@@ -90,6 +92,7 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 		this.fragmentFunction = fragmentFunction;
 		this.desc = desc;
 		this.colorTargets = createInfo.colorTargetStates();
+		this.colorFormats = colorFormats;
 		this.variantKeys[0] = defaultKey;
 		this.variantStates[0] = defaultState;
 		this.variantCount = 1;
@@ -200,16 +203,10 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 				return this.variantStates[i];
 			}
 		}
-		return this.createVariant(key, depthPixelFormat, stencilPixelFormat, colorAttachmentMask, true);
+		return this.createVariant(key, depthPixelFormat, stencilPixelFormat, colorAttachmentMask);
 	}
 
-	/** Builds a variant on the compiling worker thread, before the pipeline is handed to the frontend. */
-	void prebuildVariant(int depthPixelFormat, int stencilPixelFormat, int colorAttachmentMask) {
-		this.createVariant(variantKey(depthPixelFormat, stencilPixelFormat, colorAttachmentMask), depthPixelFormat, stencilPixelFormat,
-			colorAttachmentMask, false);
-	}
-
-	private long createVariant(long key, int depthPixelFormat, int stencilPixelFormat, int colorAttachmentMask, boolean renderThread) {
+	private long createVariant(long key, int depthPixelFormat, int stencilPixelFormat, int colorAttachmentMask) {
 		if (this.closed) {
 			return 0L;
 		}
@@ -217,15 +214,16 @@ public final class MetalRenderPipeline implements BackendRenderPipeline {
 			+ Integer.toBinaryString(colorAttachmentMask);
 		long state = 0L;
 		try {
-			MetalPipelineCompiler.writeAttachments(this.desc, this.colorTargets, depthPixelFormat, stencilPixelFormat, colorAttachmentMask);
+			MetalPipelineCompiler.writeAttachments(this.desc, this.colorTargets, this.colorFormats, depthPixelFormat, stencilPixelFormat,
+				colorAttachmentMask);
 			state = Mtl.pipelineCreate(this.device.handle(), this.desc.address());
 			if (state == 0L) {
 				Ingot.LOGGER.error("Ingot: cannot build pipeline {} for {}: {}", this.name, attachments, MetalPipelineCompiler.lastError());
-			} else if (renderThread && !variantWarned) {
+			} else if (!variantWarned) {
 				variantWarned = true;
 				Ingot.LOGGER.warn("Ingot: compiling a render pipeline state on the render thread: {} for {} (further variants are logged at debug level)",
 					this.name, attachments);
-			} else if (renderThread) {
+			} else {
 				Ingot.LOGGER.debug("Ingot: compiling a render pipeline state on the render thread: {} for {}", this.name, attachments);
 			}
 		} catch (MetalPipelineCompiler.PipelineException e) {

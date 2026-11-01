@@ -1,7 +1,10 @@
 # Ingot
 
-A native Apple Metal rendering backend for Minecraft 26.3 (Fabric) on macOS, built for Apple silicon: more frames,
-less power and less memory than vanilla, with no other mods needed.
+A native Apple Metal rendering backend for Minecraft 26.4-snapshot-6 (Fabric) on macOS, built for Apple silicon: more
+frames, less power and less memory than vanilla, with no other mods needed.
+
+This is the 26.4-snapshot-6 port of Ingot (branch `port/26.4-snapshot-6`); the main line targets 26.3. See
+"Minecraft 26.4 snapshots" in `docs/ARCHITECTURE.md` for what differs.
 
 Work in progress.
 

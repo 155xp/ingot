@@ -20,6 +20,18 @@ in the list of backends the game tries on macOS. Everything above the backend in
                          Metal  ·  CAMetalLayer
 ```
 
+## Minecraft 26.4 snapshots (this branch, 26.4-snapshot-6)
+
+* **Render pass layouts**: a `RenderPassDescriptor` is a `RenderPassLayout` plus a flat attachment list (each with
+  load/store flags and an optional clear value). Ingot encodes a pass as the layout's first subpass: its color slots and
+  depth attachment take the place of 26.3's color/depth attachments; load/store flags are ignored (always load and
+  store, like the GL backend). `nextSubpass` and `INPUT_ATTACHMENT` uniforms are unsupported; vanilla only uses
+  single-subpass layouts and no input attachments.
+* **Pipelines** are compiled for a subpass (`CompiledRenderPipeline.CreateInfo.subpass`), and passes only accept
+  pipelines of a compatible subpass, so the eagerly built PSO uses exactly the subpass's attachment formats (color
+  formats come from the subpass; `ColorTargetState` has none) and no extra D32 variant is prebuilt.
+* `copyTextureToBuffer` has no callback (callers use fences); the region clear and the startup Vulkan probe are gone.
+
 **Reference notes** (read the relevant one before changing a contract): `docs/research/frontend-contracts.md`,
 `vulkan-backend-reference.md`, `pipelines-and-shaders.md`, `integration-points.md`, `hot-paths-and-features.md`,
 `shader-translation-experiment.md`. The working SPIR-V→MSL prototype is `tools/shader-xlate/src/MslTranslator.java`.

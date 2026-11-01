@@ -1,11 +1,15 @@
 package dev.ingot.backend;
 
+import com.mojang.renderpearl.api.GpuFormat;
 import com.mojang.renderpearl.api.pipeline.BlendEquation;
 import com.mojang.renderpearl.api.pipeline.BlendFactor;
 import com.mojang.renderpearl.api.pipeline.BlendFunction;
 import com.mojang.renderpearl.api.pipeline.BlendOp;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.CompiledRenderPipeline;
+import com.mojang.renderpearl.api.pipeline.RenderPassLayout;
 import com.mojang.renderpearl.api.pipeline.ShaderType;
+import com.mojang.renderpearl.api.pipeline.SpvModule;
 import com.mojang.renderpearl.backend.api.BackendRenderPipeline;
 import dev.ingot.Ingot;
 import dev.ingot.nativ.Mtl;
@@ -27,9 +31,9 @@ import static java.lang.foreign.ValueLayout.JAVA_LONG;
 
 /**
  * GpuDeviceBackend.compilePipeline for Metal. Runs on worker threads, concurrently: SPIR-V → MSL, per-stage
- * MTLLibrary (cached by MSL hash), default PSO (with and without D32 for depth-less pipelines, like Vulkan's pair).
- * Must finish all SPIR-V access before returning (the frontend frees the modules after finishCompile). Failures log
- * and yield Pending.NULL. Owner: pipelines.
+ * MTLLibrary (cached by MSL hash), and the PSO for the attachments of the subpass the pipeline is compiled for (render
+ * passes only accept pipelines of a compatible subpass). Must finish all SPIR-V access before returning (the frontend
+ * frees the modules after finishCompile). Failures log and yield Pending.NULL. Owner: pipelines.
  */
 public final class MetalPipelineCompiler {
 	// IngotPipelineDesc (native/include/ingot.h, which _Static_asserts the same offsets).
@@ -56,7 +60,7 @@ public final class MetalPipelineCompiler {
 	}
 
 	/** CONTRACT */
-	public static BackendRenderPipeline.Pending compile(MetalDevice device, BackendRenderPipeline.CreateInfo createInfo) {
+	public static BackendRenderPipeline.Pending compile(MetalDevice device, CompiledRenderPipeline.CreateInfo createInfo) {
 		try {
 			MetalRenderPipeline pipeline = build(device, createInfo);
 			return () -> pipeline;
@@ -79,12 +83,12 @@ public final class MetalPipelineCompiler {
 		}
 	}
 
-	private static MetalRenderPipeline build(MetalDevice device, BackendRenderPipeline.CreateInfo createInfo)
+	private static MetalRenderPipeline build(MetalDevice device, CompiledRenderPipeline.CreateInfo createInfo)
 		throws PipelineException, SpirvToMsl.TranslationException {
-		BackendRenderPipeline.CreateInfo.Shader vertexShader = null;
-		BackendRenderPipeline.CreateInfo.Shader fragmentShader = null;
-		for (BackendRenderPipeline.CreateInfo.Shader shader : createInfo.shaders()) {
-			if (shader.module().type() == ShaderType.VERTEX) {
+		SpvModule vertexShader = null;
+		SpvModule fragmentShader = null;
+		for (SpvModule shader : createInfo.shaders()) {
+			if (shader.type() == ShaderType.VERTEX) {
 				vertexShader = shader;
 			} else {
 				fragmentShader = shader;
@@ -96,18 +100,22 @@ public final class MetalPipelineCompiler {
 
 		// All SPIR-V reads happen here: the frontend frees the modules as soon as finishCompile() returns.
 		List<SpirvToMsl.Slot> slots = SpirvToMsl.assignSlots(createInfo.uniforms());
-		SpirvToMsl.Stage vertex = SpirvToMsl.translate(vertexShader.module(), vertexShader.entryPoint(), slots);
-		SpirvToMsl.Stage fragment = fragmentShader != null
-			? SpirvToMsl.translate(fragmentShader.module(), fragmentShader.entryPoint(), slots)
-			: null;
+		SpirvToMsl.Stage vertex = SpirvToMsl.translate(vertexShader, slots);
+		SpirvToMsl.Stage fragment = fragmentShader != null ? SpirvToMsl.translate(fragmentShader, slots) : null;
 
 		// The descriptor lives as long as the pipeline: variants only rewrite the attachment fields.
 		Arena arena = Arena.ofAuto();
 		MemorySegment desc = arena.allocate(DESC_SIZE, 8);
 		writeDescriptor(desc, createInfo);
-		int depthFormat = defaultDepthFormat(createInfo);
+		RenderPassLayout.Subpass subpass = createInfo.subpass();
+		@Nullable GpuFormat[] colorFormats = colorFormats(subpass);
+		GpuFormat depthStencil = subpass.depthStencilAttachment() != RenderPassLayout.ATTACHMENT_UNUSED
+			? subpass.renderPassLayout().attachmentFormats().get(subpass.depthStencilAttachment())
+			: null;
+		int depthFormat = depthStencil != null && depthStencil.hasDepthAspect() ? MetalFormats.pixelFormat(depthStencil) : MetalFormats.PIXEL_INVALID;
+		int stencilFormat = depthStencil != null && depthStencil.hasStencilAspect() ? MetalFormats.pixelFormat(depthStencil) : MetalFormats.PIXEL_INVALID;
 		int colorMask = targetMask(createInfo.colorTargetStates());
-		writeAttachments(desc, createInfo.colorTargetStates(), depthFormat, MetalFormats.PIXEL_INVALID, colorMask);
+		writeAttachments(desc, createInfo.colorTargetStates(), colorFormats, depthFormat, stencilFormat, colorMask);
 		desc.set(JAVA_LONG, DESC_LABEL, arena.allocateFrom(createInfo.name()).address());
 
 		LibraryCache libraries = LIBRARIES.computeIfAbsent(device, d -> new LibraryCache());
@@ -125,14 +133,9 @@ public final class MetalPipelineCompiler {
 			if (state == 0L) {
 				throw new PipelineException("render pipeline state: " + lastError());
 			}
-			MetalRenderPipeline pipeline = new MetalRenderPipeline(device, createInfo, slots, vertex, fragment, vertexFunction,
-				fragmentFunction, desc, MetalRenderPipeline.variantKey(depthFormat, MetalFormats.PIXEL_INVALID, colorMask), state);
+			MetalRenderPipeline pipeline = new MetalRenderPipeline(device, createInfo, colorFormats, slots, vertex, fragment, vertexFunction,
+				fragmentFunction, desc, MetalRenderPipeline.variantKey(depthFormat, stencilFormat, colorMask), state);
 			built = true;
-			if (depthFormat == MetalFormats.PIXEL_INVALID) {
-				// Depth-less pipelines also draw into passes with the D32 attachment (the GUI on the main target, sky);
-				// build that variant here too, as Vulkan does, rather than on the render thread at first use.
-				pipeline.prebuildVariant(MetalFormats.PIXEL_DEPTH32_FLOAT, MetalFormats.PIXEL_INVALID, colorMask);
-			}
 			return pipeline;
 		} finally {
 			if (!built) {
@@ -154,9 +157,15 @@ public final class MetalPipelineCompiler {
 		}
 	}
 
-	/** Depth format of the variant built eagerly: D32 when the pipeline tests or writes depth, none otherwise. */
-	static int defaultDepthFormat(BackendRenderPipeline.CreateInfo createInfo) {
-		return createInfo.depthStencilState() != null ? MetalFormats.PIXEL_DEPTH32_FLOAT : MetalFormats.PIXEL_INVALID;
+	/** Format of each color slot of the subpass (ColorTargetState has none), null for unused slots. */
+	static @Nullable GpuFormat[] colorFormats(RenderPassLayout.Subpass subpass) {
+		List<GpuFormat> attachmentFormats = subpass.renderPassLayout().attachmentFormats();
+		GpuFormat[] formats = new GpuFormat[subpass.colorAttachments().size()];
+		for (int i = 0; i < formats.length; i++) {
+			int attachment = subpass.colorAttachments().getByte(i);
+			formats[i] = attachment != RenderPassLayout.ATTACHMENT_UNUSED ? attachmentFormats.get(attachment) : null;
+		}
+		return formats;
 	}
 
 	/** Bit i set for every non-null color target state (the attachments of the default variant). */
@@ -171,9 +180,9 @@ public final class MetalPipelineCompiler {
 	}
 
 	/** Everything except the function handles, the label and the attachments. */
-	static void writeDescriptor(MemorySegment desc, BackendRenderPipeline.CreateInfo createInfo) throws PipelineException {
+	static void writeDescriptor(MemorySegment desc, CompiledRenderPipeline.CreateInfo createInfo) throws PipelineException {
 		int referencedSlots = 0;
-		for (BackendRenderPipeline.CreateInfo.AttribBinding attribute : createInfo.attribBindings()) {
+		for (CompiledRenderPipeline.CreateInfo.AttribBinding attribute : createInfo.attribBindings()) {
 			int location = attribute.location();
 			int slot = attribute.bufferSlot();
 			if (location < 0 || location >= Mtl.MAX_VERTEX_ATTRIBUTES) {
@@ -194,7 +203,7 @@ public final class MetalPipelineCompiler {
 		}
 		// Layouts only for buffers that feed an attribute; an unread buffer needs no vertex fetch.
 		int describedSlots = 0;
-		for (BackendRenderPipeline.CreateInfo.VertexBuffer buffer : createInfo.vertexBuffers()) {
+		for (CompiledRenderPipeline.CreateInfo.VertexBuffer buffer : createInfo.vertexBuffers()) {
 			int slot = buffer.bufferSlot();
 			if (slot < 0 || slot >= MAX_VERTEX_BUFFERS || (referencedSlots >>> slot & 1) == 0) {
 				continue;
@@ -214,11 +223,11 @@ public final class MetalPipelineCompiler {
 	}
 
 	/**
-	 * Writes the attachment formats of one PSO variant: color attachment i gets target state i when bit i of
+	 * Writes the attachment formats of one PSO variant: color attachment i gets target state i and format i when bit i of
 	 * {@code colorMask} is set and no attachment otherwise.
 	 */
-	static void writeAttachments(MemorySegment desc, List<@Nullable ColorTargetState> targets, int depthFormat, int stencilFormat,
-								 int colorMask) throws PipelineException {
+	static void writeAttachments(MemorySegment desc, List<@Nullable ColorTargetState> targets, @Nullable GpuFormat[] formats, int depthFormat,
+								 int stencilFormat, int colorMask) throws PipelineException {
 		if (colorMask >>> Mtl.MAX_COLOR_TARGETS != 0) {
 			throw new PipelineException("color attachment mask " + Integer.toBinaryString(colorMask) + " exceeds "
 				+ Mtl.MAX_COLOR_TARGETS + " attachments");
@@ -229,12 +238,13 @@ public final class MetalPipelineCompiler {
 				continue;
 			}
 			ColorTargetState target = i < targets.size() ? targets.get(i) : null;
-			if (target == null) {
-				throw new PipelineException("color attachment " + i + " has no color target state");
+			GpuFormat targetFormat = i < formats.length ? formats[i] : null;
+			if (target == null || targetFormat == null) {
+				throw new PipelineException("color attachment " + i + " has no color target state or subpass attachment");
 			}
-			int format = MetalFormats.pixelFormat(target.format());
+			int format = MetalFormats.pixelFormat(targetFormat);
 			if (format == MetalFormats.PIXEL_INVALID) {
-				throw new PipelineException("color format " + target.format() + " has no Metal equivalent");
+				throw new PipelineException("color format " + targetFormat + " has no Metal equivalent");
 			}
 			long at = DESC_COLORS + i * COLOR_SIZE;
 			desc.set(JAVA_INT, at, format);
