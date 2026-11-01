@@ -173,6 +173,8 @@ def cmd_setup(args):
         props["ingot.bench.survey"] = "true"
     if args.fps_cap:
         props["ingot.bench.fpsCap"] = args.fps_cap
+    for key, value in cfg.get("benchProps", {}).items():
+        props["ingot.bench." + key] = str(value)
     if cfg.get("jvmArgs"):
         props["jvm.args"] = cfg["jvmArgs"]
     if cfg.get("expectBackend"):

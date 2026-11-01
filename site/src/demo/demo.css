@@ -1,0 +1,145 @@
+.pd .ss-stage {
+  overflow: hidden;
+  background: transparent;
+}
+
+/* The game: pinned top-left, off the bottom */
+.pd-win {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  width: 780px;
+  height: 640px;
+  /* Off the bottom: the game fades out over its water instead of a hard cut on the dark page */
+  -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 92%);
+  mask-image: linear-gradient(to bottom, #000 72%, transparent 92%);
+}
+
+.pd-game {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: #9fb8ef;
+}
+
+.pd-shot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+}
+
+/* F3: Minecraft's debug lines, each on its own translucent gray strip */
+.pd-f3 {
+  position: absolute;
+  top: 6px;
+  display: grid;
+  gap: 1px;
+  font: 11px/1.3 'Departure Mono', ui-monospace, monospace;
+  color: #e0e0e0;
+}
+
+.pd-f3--left {
+  left: 6px;
+  justify-items: start;
+}
+
+.pd-f3--right {
+  right: 6px;
+  justify-items: end;
+}
+
+.pd-line {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: pre;
+  padding: 0 3px;
+  background: rgb(80 80 80 / 0.56);
+}
+
+.pd-line--blank {
+  height: 14px;
+}
+
+.pd-gap {
+  height: 10px;
+}
+
+/* The tool: Minecraft's own options look, smaller, in front, straddling the window's right edge over sky */
+.pd-panel {
+  position: absolute;
+  top: 168px;
+  left: 650px;
+  width: 360px;
+  display: grid;
+  gap: 8px;
+  padding: 16px 16px 18px;
+  background: rgb(18 18 18 / 0.94);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08), 0 24px 60px rgb(0 0 0 / 0.55);
+  font: 12px/1.3 'Departure Mono', ui-monospace, monospace;
+  color: #fff;
+  text-shadow: 1px 1px 0 #3f3f3f;
+}
+
+.pd-title {
+  text-align: center;
+}
+
+.pd-status {
+  margin-bottom: 4px;
+  text-align: center;
+  color: #a0a0a0;
+  text-shadow: none;
+}
+
+.pd-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 8px;
+  white-space: pre;
+  background: #6c6c6c;
+  box-shadow: 0 0 0 2px #000, inset 0 2px 0 rgb(255 255 255 / 0.22), inset 0 -3px 0 rgb(0 0 0 / 0.32);
+  transition: box-shadow 0.15s ease;
+}
+
+.pd-btn[data-hover] {
+  box-shadow: 0 0 0 2px #fff, inset 0 2px 0 rgb(255 255 255 / 0.22), inset 0 -3px 0 rgb(0 0 0 / 0.32);
+}
+
+.pd-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Narrow: the panel on top, the game under it running off the right, so the F3 lines stay whole */
+.pd .ss-stage[data-layout='compact'] .pd-win {
+  top: 196px;
+  left: 16px;
+  width: 420px;
+  height: 460px;
+}
+
+.pd .ss-stage[data-layout='compact'] .pd-panel {
+  top: 16px;
+  left: 16px;
+  width: 326px;
+}
+
+.pd .ss-stage[data-layout='compact'] .pd-pair .pd-btn {
+  font-size: 11px;
+}
+
+/* Only filler may run off an edge: the GPU lines would be cut, so the narrow window keeps the frame-rate line alone */
+.pd .ss-stage[data-layout='compact'] .pd-f3--right {
+  display: none;
+}
+
+/* The leader is annotation, not product: neutral ink */
+.pd .ss-connector {
+  --ss-accent: #f2f2ee;
+}

@@ -29,6 +29,11 @@ launcher's ZGC flags):
 -XX:+UseG1GC -XX:MaxGCPauseMillis=40 -XX:+UseCompactObjectHeaders -XX:+UseStringDeduplication
 ```
 
+## Site
+
+`site/` is [ingot.ericomg.com](https://ingot.ericomg.com) (Vite and React; `cd site && bun install && bun run build`, deployed
+with `vercel deploy --prod`). Its figures are drawn from the benchmark numbers by `site/scripts/columns.mjs`.
+
 ## Measurements
 
 `bench/` measures frame times, CPU and GPU energy and memory against vanilla; see `bench/README.md` and

@@ -1,0 +1,82 @@
+/* Glyph kit (MIT, Alexander Traykov, https://glyph-kit.traykov.cc): the figure roles and the arrive motion from its
+   HTML output, themed for this page through the --gk-* variables. */
+.gk {
+  --gk-data: var(--accent);
+  margin: 0;
+  min-width: 0;
+  padding: 20px 20px 18px;
+  border-radius: 8px;
+  background: #121211;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.gk figcaption {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 22px;
+}
+
+.gk-title {
+  color: var(--ink);
+}
+
+.gk-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.gk-body {
+  overflow-x: auto;
+}
+
+/* Departure Mono draws on an 11px grid: 16.5px puts every block on whole device pixels on a Retina display, so
+   columns have no seams; line height 1 makes a column's rows one solid bar. */
+.gk-figure {
+  margin: 0;
+  /* Room for the value lifted over the tallest column */
+  padding-top: 0.5em;
+  font: 16.5px/1 var(--mono);
+  white-space: pre;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+/* Block glyphs are anti-aliased at every cell edge; a half-pixel stroke makes neighbouring cells overlap, so a
+   column is one solid shape instead of a grid of cells */
+.gk-figure .gk-d,
+.gk-figure .gk-m { -webkit-text-stroke: 0.5px currentColor; }
+.gk-d { color: var(--gk-data); }
+.gk-e { color: var(--gk-data); opacity: 0.45; }
+/* Receded series: an opaque gray (ink at about a third), since opacity double-blends where a column's rows meet */
+.gk-m { color: #53524e; }
+.gk-f { color: var(--muted); }
+.gk-v { color: var(--ink); }
+.gk-diff { color: var(--accent); }
+/* A column's value sits a few pixels clear of its top (rows have no line gap) */
+.gk-val { position: relative; top: -0.3em; }
+
+
+
+.is-waiting .gk-a { visibility: hidden; }
+.is-arriving .gk-a { animation: gk-wait calc(var(--base, 0ms) + var(--d)) steps(1, end); }
+.gk-s { position: relative; }
+.gk-s0, .gk-s1, .gk-s2, .gk-s3 { position: absolute; left: 0; top: 0; visibility: hidden; user-select: none; }
+.is-waiting .gk-s0 { visibility: visible; }
+.is-arriving .gk-s0 { visibility: visible; animation: gk-gone 1ms steps(1, end) calc(var(--base, 0ms) + var(--d)) forwards; }
+.is-arriving .gk-s1, .is-arriving .gk-s2 {
+  visibility: visible;
+  animation: gk-wait calc(var(--base, 0ms) + var(--d)) steps(1, end), gk-gone 1ms steps(1, end) calc(var(--base, 0ms) + var(--d) + 40ms) forwards;
+}
+.is-arriving .gk-s3 {
+  visibility: visible;
+  animation: gk-wait calc(var(--base, 0ms) + var(--d)) steps(1, end), gk-gone 1ms steps(1, end) calc(var(--base, 0ms) + var(--d) + 120ms) forwards;
+}
+@keyframes gk-wait { from, to { visibility: hidden; } }
+@keyframes gk-gone { from, to { visibility: hidden; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .is-waiting .gk-a { visibility: visible; }
+  .is-arriving .gk-a { animation: none; }
+  .gk-s0, .gk-s1, .gk-s2, .gk-s3 { visibility: hidden; animation: none; }
+}

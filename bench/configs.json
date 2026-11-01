@@ -1,5 +1,5 @@
 {
-	"_comment": "Benchmark configurations. mods: mod sets from mods.json/mods.lock.json copied into the run's mods/ folder. ingot: value of -Dingot.enabled (Ingot is on the classpath in every configuration). expectBackend: case-insensitive substring the GPU backend name must contain, otherwise the result is marked invalid (catches Ingot silently falling back to OpenGL). rejectBackend: substring it must not contain (catches Ingot running where it should be disabled). options: options.txt lines that override bench/options.base.txt. ingotProps: Ingot settings (config/ingot.properties keys) on top of the defaults in benchlib.ingot_props (Performance mode, full resolution).",
+	"_comment": "Benchmark configurations. mods: mod sets from mods.json/mods.lock.json copied into the run's mods/ folder. ingot: value of -Dingot.enabled (Ingot is on the classpath in every configuration). expectBackend: case-insensitive substring the GPU backend name must contain, otherwise the result is marked invalid (catches Ingot silently falling back to OpenGL). rejectBackend: substring it must not contain (catches Ingot running where it should be disabled). options: options.txt lines that override bench/options.base.txt. ingotProps: Ingot settings (config/ingot.properties keys) on top of the defaults in benchlib.ingot_props (Performance mode, full resolution). benchProps: harness settings (ingot.bench.* without the prefix), e.g. debugOverlay for screenshots.",
 	"vanilla": {
 		"description": "Fabric Loader + bench harness only; Ingot present but disabled",
 		"ingot": false,
@@ -89,5 +89,14 @@
 			"batteryResolution": "full"
 		},
 		"jvmArgs": "-Xmx4G -XX:+UseG1GC -XX:MaxGCPauseMillis=40 -XX:+UseCompactObjectHeaders -XX:+UseStringDeduplication"
+	},
+	"ingot-shots": {
+		"description": "Ingot with the F3 overlay shown while measuring: for screenshots only, not for numbers",
+		"ingot": true,
+		"mods": [],
+		"expectBackend": "metal",
+		"benchProps": {
+			"debugOverlay": "true"
+		}
 	}
 }

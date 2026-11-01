@@ -155,6 +155,10 @@ final class RunController implements Bench.Controller {
 					this.settledSnapshot = this.probe.last();
 					logSettle("warmup", settled);
 					enter(State.MEASURE, now);
+					// -Dingot.bench.debugOverlay=true shows the F3 overlay while measuring (for screenshots, not numbers).
+					if (Boolean.getBoolean("ingot.bench.debugOverlay")) {
+						minecraft.debugEntries.setOverlayVisible(true);
+					}
 					this.displayAtStart = DisplayState.query();
 					this.gcBefore = EnvInfo.gcDelta(null);
 					this.jitBefore = EnvInfo.jitMillis();

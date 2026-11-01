@@ -1,0 +1,308 @@
+@font-face {
+  font-family: 'Departure Mono';
+  src: url('/fonts/DepartureMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --bg: #0b0b0a;
+  --ink: #edece7;
+  --muted: #8d8b84;
+  --line: #262522;
+  --accent: #ff8a3d;
+  --mono: 'Departure Mono', ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.6 var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: var(--ink);
+}
+
+.quiet {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.quiet:hover {
+  color: var(--ink);
+}
+
+.top,
+main,
+.foot {
+  width: min(1040px, 100% - 48px);
+  margin-inline: auto;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  text-decoration: none;
+}
+
+.brand img {
+  image-rendering: pixelated;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+h1 {
+  max-width: 18ch;
+  font-size: clamp(44px, 6.4vw, 66px);
+  line-height: 1.02;
+}
+
+h2 {
+  font-size: clamp(26px, 3.4vw, 33px);
+  line-height: 1.15;
+}
+
+.hero {
+  padding: 72px 0 40px;
+}
+
+.lede {
+  max-width: 52ch;
+  margin: 28px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 36px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #120b05;
+  text-decoration: none;
+  transition: transform 0.12s ease, background-color 0.15s ease;
+}
+
+.button:hover {
+  background: #ff9d5c;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button--quiet {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.button--quiet:hover {
+  background: #151513;
+}
+
+.demo {
+  margin: 24px 0 0;
+}
+
+.shots,
+.numbers,
+.install {
+  padding-top: 120px;
+}
+
+.line {
+  max-width: 72ch;
+  margin: 14px 0 0;
+  color: var(--muted);
+}
+
+.shots .line {
+  margin: 0 0 24px;
+}
+
+.shots__strips {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+/* Native size, scaled by whole pixels on Retina: Minecraft's text stays crisp */
+.shots__strips img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  border-radius: 4px;
+}
+
+.legend {
+  display: flex;
+  gap: 24px;
+  margin: 40px 0 16px;
+  color: var(--muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend__swatch {
+  width: 10px;
+  height: 10px;
+}
+
+.legend__swatch--a {
+  background: #53524e;
+}
+
+.legend__swatch--b {
+  background: var(--accent);
+}
+
+.numbers__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.source {
+  max-width: 90ch;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.install ol {
+  display: grid;
+  gap: 14px;
+  max-width: 64ch;
+  margin: 28px 0 0;
+  padding-left: 1.6em;
+  color: var(--muted);
+}
+
+.install li::marker {
+  color: var(--ink);
+}
+
+.install a {
+  color: var(--ink);
+}
+
+.foot {
+  margin-top: 160px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+
+.foot__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px 40px;
+}
+
+.foot__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+}
+
+.foot__links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.foot__links a:hover {
+  color: var(--ink);
+}
+
+.foot__legal {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Edge to edge: 29 cells across the viewport, each a whole number of device pixels (Departure Mono's cell is 7/11
+   of the font size), so the blocks meet without seams */
+.wordmark {
+  --cell: round(down, calc((100vw - 48px) / 29), 0.5px);
+  margin: 96px calc(50% - 50vw + 24px) 0;
+  padding-bottom: 24px;
+  color: var(--accent);
+  font: calc(var(--cell) * 11 / 7) / 1 var(--mono);
+  /* Neighbouring blocks overlap by a hair: one solid letter, not a grid of cells */
+  -webkit-text-stroke: 0.6px currentColor;
+  white-space: pre;
+  font-variant-ligatures: none;
+  user-select: none;
+}
+
+.wordmark__row {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding-top: 40px;
+  }
+
+  .shots__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shots,
+  .numbers,
+  .install {
+    padding-top: 88px;
+  }
+
+}

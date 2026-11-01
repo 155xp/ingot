@@ -1,0 +1,16 @@
+{
+  "source": "bench/run.sh on a MacBook Pro M4 Pro (Mac16,8), macOS 27.2, 2026-11-01: full resolution, Ingot in Battery mode except for max frame rate (Performance mode); memory is the physical footprint with each side's Java settings. Median of 1 to 2 runs per configuration.",
+  "series": ["vanilla", "Ingot"],
+  "panels": [
+    { "title": "Power at a 120 fps cap", "unit": "W", "better": "lower", "digits": 2,
+      "groups": [{ "label": "RD 16", "values": [3.79, 2.62] }, { "label": "RD 32", "values": [8.13, 7.15] }] },
+    { "title": "Energy per frame", "unit": "mJ", "better": "lower", "digits": 1,
+      "groups": [{ "label": "RD 16", "values": [32.6, 21.9] }, { "label": "RD 32", "values": [81.2, 59.8] }] },
+    { "title": "Smoothness, 1% low", "unit": "fps", "better": "higher", "digits": 0,
+      "groups": [{ "label": "RD 16", "values": [72.6, 109.6] }, { "label": "RD 32", "values": [60.8, 115.3] }] },
+    { "title": "Max frame rate, uncapped", "unit": "fps", "better": "higher", "digits": 0,
+      "groups": [{ "label": "RD 16", "values": [205, 538] }] },
+    { "title": "Memory used", "unit": "GB", "better": "lower", "digits": 1,
+      "groups": [{ "label": "RD 16", "values": [5.7, 2.7] }, { "label": "RD 32", "values": [6.9, 5.4] }] }
+  ]
+}
