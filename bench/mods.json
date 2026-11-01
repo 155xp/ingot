@@ -1,0 +1,16 @@
+{
+	"_comment": "Mod sets for the benchmark. bench/fetch_mods.py --update resolves these (plus REQUIRED dependencies, recursively) against the Modrinth API for gameVersion + loader and pins the result in mods.lock.json. channel: release (default) only considers release versions; any also allows beta/alpha.",
+	"gameVersion": "26.3",
+	"loader": "fabric",
+	"sets": {
+		"mainstream": [
+			{ "project": "sodium", "channel": "any", "why": "renderer rewrite (latest 26.3 build, including alphas)" },
+			{ "project": "lithium", "why": "game logic / server tick optimizations" },
+			{ "project": "ferrite-core", "why": "memory usage" },
+			{ "project": "immediatelyfast", "why": "immediate-mode rendering (GUI, text, HUD) batching" },
+			{ "project": "entityculling", "why": "skips occluded entities and block entities" },
+			{ "project": "moreculling", "why": "extra block/face culling" },
+			{ "project": "modernfix-mvus", "why": "ModernFix; the 26.3 build Fabulously Optimized ships is the mVUS fork, the original 'modernfix' project has no 26.3 release" }
+		]
+	}
+}

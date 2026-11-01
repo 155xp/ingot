@@ -200,12 +200,41 @@ Target machine: MacBook Pro 14" (Mac16,8), M4 Pro 20-core GPU, 3024x1964 ProMoti
    (`ingot_wait_until`), no spinning. Active whenever the mod is enabled (it is backend-independent).
 3. **Don't render frames nobody sees.** When the window is fully occluded (`ingot_surface_visible() == 0`),
    `FramerateLimitTracker` reports `WINDOW_ICONIFIED` (10 FPS). Vanilla only does this when minimised.
-4. **Battery saver** (`batterySaver=auto|always|never`, default auto): on battery or in Low Power Mode, an
-   "Unlimited" frame-rate limit is capped to the display's max refresh rate (frames beyond it are never shown).
-5. **Late drawable acquire**, `displaySyncEnabled` for vsync (ProMotion aware), `maximumDrawableCount = 3`.
+4. **Power modes** (`powerMode=auto|performance|battery`, default auto; in game: Options > Video Settings, top row,
+   and "Ingot Settings..."). Auto is Battery mode on battery power or in Low Power Mode, Performance mode otherwise.
+   `PowerPolicy.update` resolves the mode once per frame (top of `Minecraft.runTick`) and applies what changed:
+   - **Frame cap**: Battery mode caps the frame rate to `batteryFps` (0 = the display's refresh rate, 120 on
+     ProMotion; frames beyond it are never shown); Performance mode to `performanceFps` (-1 = Video Settings). The
+     cap only lowers `FramerateLimitTracker`'s limit (menus, AFK and minimized limits still apply), and a cap at or
+     above the refresh rate is left to vsync when vsync is on.
+   - **Efficiency cores** (`batteryEfficiencyCores`, default on): the pool behind `Util.backgroundExecutor()`
+     (`Worker-Main-N`: chunk meshing, section visibility, world generation and other integrated-server work) is wrapped
+     so every task first brings its thread to the requested QoS class (`ingot_thread_set_qos`, which can only change
+     the calling thread). Utility QoS puts the work on the efficiency cores; Performance mode restores default.
+   - **Render resolution** (`batteryResolution` / `performanceResolution`, full or half, default full; Metal only): `Window`
+     reports one pixel per point instead of the Retina display's two (`RenderScale`, `WindowMixin`), so Minecraft
+     renders a quarter of the pixels and the CAMetalLayer stretches the drawable with nearest filtering. The automatic
+     GUI scale halves with it (a fixed one is converted), so menus and text stay pixel-identical; only the world is
+     softer. Switching resizes like a window resize.
+5. **Late drawable acquire**, `displaySyncEnabled` for vsync (ProMotion aware), `maximumDrawableCount = 3`. In a
+   window CAMetalLayer hands out drawables only as fast as the compositor shows them, so a blocking `nextDrawable`
+   holds the game to the refresh rate even with vsync off. When the frame limit is above the refresh rate and vsync is
+   off (Unlimited in Performance mode), `MetalSurface` uses `ingot_surface_try_drawable` instead: a serial queue
+   acquires the next drawable in the background, and a frame finding none ready is rendered but not shown.
+   Measured uncapped (RD 16, 2560x1440): 538 FPS against 120 with the blocking acquire (vanilla OpenGL: ~205).
 6. **GPU bandwidth is energy.** Private render targets (lossless compression), clears folded into load actions,
-   no redundant passes.
+   no redundant passes. **Render pass merging**: `submitRenderPass` parks the encoder instead of ending it, and the
+   next `createRenderPass` with exactly the same attachments continues in it (state reset to a fresh encoder's), so
+   the tile-based GPU never stores and reloads the attachments in between. A depth clear of the parked depth
+   attachment is drawn inside the pass (`ingot_render_clear_depth`). Any other command ends the parked encoder first
+   (`endBlit`). In the benchmark frame, Sky and Main merge; vanilla's buffer uploads between Main and the GUI
+   (`StagedVertexBuffer`) still split the GUI off. `-Dingot.passMerging=false` turns it off,
+   `-Dingot.debugPassStats=true` logs passes per frame and traces one frame.
 7. **Fewer, cheaper CPU→GPU transitions**: persistent mapping, redundant-state filtering in Java, native multi-draw.
+8. **Fast-math shaders** (`MTLMathModeFast`, `-Dingot.shaderMath=safe|relaxed|fast`): what Apple's OpenGL driver and
+   MoltenVK use for the same GLSL. IEEE-strict math cost 24% more GPU power at render distance 32 (bench `far`,
+   Battery mode, 120 FPS: 9.3 W against 7.1 W); screenshots differ only by rounding. Terrain as direct draws instead of
+   one indirect draw per section (`-Dingot.multiDrawIndirect=false`) made no measurable difference.
 
 The benchmark measures FPS and energy (process CPU energy via `proc_pid_rusage` `ri_energy_nj`, GPU energy via
 IOReport "Energy Model"/"GPU Energy"; both without root) uncapped and at a fixed 60 FPS.

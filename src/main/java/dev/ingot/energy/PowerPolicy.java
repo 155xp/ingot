@@ -9,12 +9,14 @@ import net.minecraft.client.Minecraft;
 
 /**
  * Ingot's energy policy (docs/ARCHITECTURE.md, "Energy efficiency"), called by the mixins on the render thread: the
- * spin-free frame limiter, the occlusion throttle and the battery saver. None of it needs the Metal backend to be
- * active; only the window queries prefer the Metal surface when there is one.
+ * power modes, the spin-free frame limiter and the occlusion throttle. None of it needs the Metal backend to be active
+ * except the render resolution, which needs Ingot's surface to stretch the frame.
+ *
+ * <p>Power modes: Performance leaves the frame rate to Video Settings and keeps everything on the performance cores.
+ * Battery caps the frame rate (by default to the display's refresh rate, 120 on ProMotion), runs background work on
+ * the efficiency cores and can render at half resolution. Auto is Battery on battery power or in Low Power Mode.
  */
 public final class PowerPolicy {
-	/** framerateLimit value meaning "Unlimited" (the top of the Max Framerate slider). */
-	private static final int UNLIMITED_FRAMERATE = 260;
 	private static final long SECOND_NS = 1_000_000_000L;
 
 	private static final IngotConfig CONFIG = IngotConfig.get();
@@ -22,12 +24,42 @@ public final class PowerPolicy {
 
 	/** End of the previous frame-limiter wait; the same accounting as FramerateLimiter.lastFrameTime. */
 	private static long lastFrameTime = System.nanoTime();
-	private static boolean savingPower;
+	private static boolean onBatteryOrLowPower;
 	private static long nextPowerQuery = System.nanoTime();
 	private static int windowRefreshRate = 60;
 	private static long nextRefreshRateQuery = System.nanoTime();
+	/** Profile in effect for the current frame. */
+	private static boolean batteryMode;
 
 	private PowerPolicy() {
+	}
+
+	/** Once per frame, at the top of Minecraft.runTick: resolves the power mode and applies what changed. */
+	public static void update(Minecraft minecraft) {
+		batteryMode = switch (CONFIG.powerMode) {
+			case PERFORMANCE -> false;
+			case BATTERY -> true;
+			case AUTO -> onBatteryOrLowPowerMode();
+		};
+		if (NATIVE) {
+			WorkerQos.setEfficient(batteryMode && CONFIG.batteryEfficiencyCores);
+		}
+		IngotConfig.Resolution resolution = batteryMode ? CONFIG.batteryResolution : CONFIG.performanceResolution;
+		RenderScale.apply(minecraft, MetalSurface.current() != null ? resolution.divisor : 1);
+		// Frames beyond the refresh rate (vsync off, limit above it, e.g. Unlimited in Performance mode) must not wait
+		// for the compositor, or the window holds the game to the refresh rate.
+		MetalSurface.setPresentWithoutWaiting(!minecraft.options.enableVsync().get()
+			&& minecraft.getFramerateLimitTracker().getFramerateLimit() > displayRefreshRate());
+	}
+
+	/** True while Battery mode applies (explicitly, or Auto on battery power / Low Power Mode). */
+	public static boolean isBatteryMode() {
+		return batteryMode;
+	}
+
+	/** True when Auto would pick Battery mode right now. */
+	public static boolean isOnBatteryOrLowPower() {
+		return onBatteryOrLowPowerMode();
 	}
 
 	/**
@@ -57,36 +89,34 @@ public final class PowerPolicy {
 	}
 
 	/**
-	 * Battery saver: while it applies, an Unlimited framerate becomes the display's refresh rate (frames beyond it
-	 * are never shown). With vsync on the display already paces frames, so the limiter is left alone there.
+	 * The power mode's frame cap applied to the limit FramerateLimitTracker computed (which already includes the menu,
+	 * AFK and minimized-window limits): the lower of the two wins. With vsync on the display already paces frames at
+	 * its refresh rate, so a cap at or above it is left to the display.
 	 */
 	public static int limitFramerate(int framerateLimit) {
-		if (framerateLimit < UNLIMITED_FRAMERATE || !batterySaverActive() || Minecraft.getInstance().options.enableVsync().get()) {
+		int cap = batteryMode
+			? (CONFIG.batteryFps == IngotConfig.FPS_DISPLAY ? displayRefreshRate() : CONFIG.batteryFps)
+			: CONFIG.performanceFps;
+		if (cap <= 0 || cap >= framerateLimit) {
 			return framerateLimit;
 		}
-		int refreshRate = displayRefreshRate();
-		// The limiter divides by the limit; a display that reports no rate keeps the vanilla limit.
-		return refreshRate > 0 ? refreshRate : framerateLimit;
-	}
-
-	private static boolean batterySaverActive() {
-		return switch (CONFIG.batterySaver) {
-			case ALWAYS -> true;
-			case NEVER -> false;
-			case AUTO -> onBatteryOrLowPowerMode();
-		};
+		if (cap >= displayRefreshRate() && Minecraft.getInstance().options.enableVsync().get()) {
+			return framerateLimit;
+		}
+		return cap;
 	}
 
 	private static boolean onBatteryOrLowPowerMode() {
 		long now = System.nanoTime();
 		if (NATIVE && now - nextPowerQuery >= 0L) {
 			nextPowerQuery = now + SECOND_NS;
-			savingPower = (Mtl.powerState() & (Mtl.POWER_ON_BATTERY | Mtl.POWER_LOW_POWER_MODE)) != 0;
+			onBatteryOrLowPower = (Mtl.powerState() & (Mtl.POWER_ON_BATTERY | Mtl.POWER_LOW_POWER_MODE)) != 0;
 		}
-		return savingPower;
+		return onBatteryOrLowPower;
 	}
 
-	private static int displayRefreshRate() {
+	/** Maximum refresh rate of the display showing the window (120 on ProMotion). */
+	public static int displayRefreshRate() {
 		MetalSurface surface = MetalSurface.current();
 		if (surface != null) {
 			return surface.maxRefreshRate();
@@ -108,9 +138,9 @@ public final class PowerPolicy {
 			if (Mtl.abiVersion() == Mtl.ABI_VERSION) {
 				return true;
 			}
-			Ingot.LOGGER.warn("Ingot: libingot has the wrong ABI version; frame limiter and battery saver stay vanilla");
+			Ingot.LOGGER.warn("Ingot: libingot has the wrong ABI version; frame limiter and power modes stay vanilla");
 		} catch (Throwable t) {
-			Ingot.LOGGER.warn("Ingot: libingot is unavailable; frame limiter and battery saver stay vanilla", t);
+			Ingot.LOGGER.warn("Ingot: libingot is unavailable; frame limiter and power modes stay vanilla", t);
 		}
 		return false;
 	}

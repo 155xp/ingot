@@ -20,14 +20,21 @@ _Static_assert(offsetof(IngotPipelineDesc, input_primitive_topology) == 1340, "I
 _Static_assert(offsetof(IngotPipelineDesc, label) == 1344, "IngotPipelineDesc layout");
 _Static_assert(sizeof(IngotPipelineDesc) == 1352, "IngotPipelineDesc layout");
 
+static _Atomic uint32_t shader_math = 0;
+
+INGOT_EXPORT void ingot_set_shader_math(uint32_t mode) {
+    atomic_store(&shader_math, mode <= 2 ? mode : 0);
+}
+
 MTLCompileOptions *ingot_compile_options(void) {
     MTLCompileOptions *options = [MTLCompileOptions new];
     options.languageVersion = MTLLanguageVersion2_4;
-    // IEEE-conforming math: the GL and Vulkan backends do not relax floating point either.
+    // Safe (IEEE-conforming) unless ingot_set_shader_math chose relaxed or fast.
+    uint32_t mode = atomic_load(&shader_math);
     if (@available(macOS 15.0, *)) {
-        options.mathMode = MTLMathModeSafe;
+        options.mathMode = mode == 2 ? MTLMathModeFast : mode == 1 ? MTLMathModeRelaxed : MTLMathModeSafe;
     } else {
-        options.fastMathEnabled = NO;
+        options.fastMathEnabled = mode != 0;
     }
     options.preserveInvariance = YES;
     return options;

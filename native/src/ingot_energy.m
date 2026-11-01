@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <mach/mach_time.h>
 #include <notify.h>
+#include <pthread/qos.h>
 #include <sys/event.h>
 #include <unistd.h>
 
@@ -121,6 +122,10 @@ INGOT_EXPORT void ingot_wait_until(int64_t deadline_ns) {
             break;
         }
     }
+}
+
+INGOT_EXPORT int32_t ingot_thread_set_qos(uint32_t qos_class) {
+    return pthread_set_qos_class_self_np((qos_class_t)qos_class, 0);
 }
 
 INGOT_EXPORT int64_t ingot_now_ns(void) {

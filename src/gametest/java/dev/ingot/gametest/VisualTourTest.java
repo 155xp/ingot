@@ -19,12 +19,19 @@ import net.minecraft.world.level.levelgen.presets.WorldPresets;
 public class VisualTourTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
+		if (!TestFilter.runs(this)) {
+			return;
+		}
 		String backend = context.computeOnClient(mc -> com.mojang.blaze3d.systems.RenderSystem.getDevice().getDeviceInfo().backendName())
 			.toLowerCase(java.util.Locale.ROOT);
 		Path out = Path.of(System.getProperty("ingot.test.out", "screenshots/tour")).resolve(backend);
 
 		// With the display asleep, OpenGL's vsync'd swap blocks forever; the tour does not need vsync on either backend.
-		context.runOnClient(mc -> mc.options.enableVsync().set(false));
+		// Muted: the tour runs while someone is using the Mac.
+		context.runOnClient(mc -> {
+			mc.options.enableVsync().set(false);
+			mc.options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MASTER).set(0.0);
+		});
 		context.waitForScreen(TitleScreen.class);
 		context.waitTicks(40);
 		shot(context, out, "01-title");

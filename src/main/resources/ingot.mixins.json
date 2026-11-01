@@ -4,10 +4,14 @@
 	"plugin": "dev.ingot.mixin.IngotMixinPlugin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"FramerateLimiterMixin",
 		"FramerateLimitTrackerMixin",
+		"FramerateLimiterMixin",
 		"MinecraftMixin",
-		"PreferredGraphicsApiMixin"
+		"PreferredGraphicsApiMixin",
+		"UtilMixin",
+		"VideoSettingsScreenMixin",
+		"WindowAccessor",
+		"WindowMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

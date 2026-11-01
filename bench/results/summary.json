@@ -1,0 +1,1283 @@
+{
+  "generatedAt": "2026-11-01T21:35:53+00:00",
+  "skippedRuns": {
+    "disturbed (busy machine)": 14,
+    "invalid": 2
+  },
+  "groups": [
+    {
+      "scenario": "far",
+      "fpsCap": 120,
+      "durationSeconds": 30.0,
+      "warmupSeconds": 10.0,
+      "templateId": "affa0778-b82a-4d8f-b423-18c7b588327c",
+      "host": {
+        "cpu": "Apple M4 Pro",
+        "model": "Mac16,8",
+        "memoryGB": 24,
+        "macos": "27.2",
+        "macosBuild": "26B5091g",
+        "machine": "arm64",
+        "onBattery": false,
+        "lowPowerMode": false,
+        "thermalWarning": null,
+        "memoryFreePercent": 59,
+        "powerMode": 0,
+        "loadAverage": [
+          5.52,
+          5.14,
+          5.22
+        ]
+      },
+      "resolution": "2560x1440",
+      "renderDistance": 32,
+      "configs": [
+        {
+          "config": "vanilla",
+          "runs": 2,
+          "avgFps": 99.00999999999999,
+          "onePercentLowFps": 58.735,
+          "pointOnePercentLowFps": 42.435,
+          "p50FrameMs": 9.54185,
+          "p99FrameMs": 15.431650000000001,
+          "avgFpsRange": [
+            98.39,
+            99.63
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 98.69,
+              "onePercentLowFps": 58.254999999999995
+            },
+            "fly": {
+              "avgFps": 99.66499999999999,
+              "onePercentLowFps": 60.075
+            }
+          },
+          "backend": "OpenGL",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0 (disabled)"
+          ],
+          "notes": [
+            "avg range 98-100 (1%)",
+            "background 2.0 cores",
+            "below the FPS cap in 2 run(s)",
+            "dirty tree"
+          ],
+          "energyRuns": 2,
+          "energy": {
+            "cpuW": 3.4905,
+            "gpuW": 4.619,
+            "gpuOverIdleW": 4.4445,
+            "totalW": 8.109,
+            "mJPerFrame": 81.904,
+            "cpuMJPerFrame": 35.2575,
+            "gpuMJPerFrame": 46.6465,
+            "cpuJ": 104.733,
+            "gpuJ": 138.583,
+            "cpuPCoreShare": 0.999,
+            "cpuCores": 0.8674999999999999,
+            "instructionsPerFrame": 112349388.5,
+            "wakeupsPerSecond": 346.5,
+            "idleGpuW": 0.1745
+          },
+          "energyNotes": [
+            "mJ/frame range 80.83-82.98 (3%)",
+            "below the FPS cap in 2 run(s)",
+            "vanilla frame limiter"
+          ],
+          "results": [
+            "results/raw/far-cap120/vanilla/20261101T210619Z.json",
+            "results/raw/far-cap120/vanilla/20261101T212928Z.json"
+          ]
+        },
+        {
+          "config": "ingot-battery",
+          "runs": 4,
+          "avgFps": 119.5,
+          "onePercentLowFps": 110.235,
+          "pointOnePercentLowFps": 71.825,
+          "p50FrameMs": 8.362449999999999,
+          "p99FrameMs": 8.45285,
+          "avgFpsRange": [
+            119.41,
+            119.56
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.46000000000001,
+              "onePercentLowFps": 106.86
+            },
+            "fly": {
+              "avgFps": 119.57499999999999,
+              "onePercentLowFps": 117.46000000000001
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 119-120 (0%)",
+            "background 2.1 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 4,
+          "energy": {
+            "cpuW": 1.5755,
+            "gpuW": 8.468499999999999,
+            "gpuOverIdleW": 8.2605,
+            "totalW": 10.0435,
+            "mJPerFrame": 84.084,
+            "cpuMJPerFrame": 13.187999999999999,
+            "gpuMJPerFrame": 70.896,
+            "cpuJ": 47.266,
+            "gpuJ": 254.09949999999998,
+            "cpuPCoreShare": 0.9964999999999999,
+            "cpuCores": 0.6475,
+            "instructionsPerFrame": 44902672.0,
+            "wakeupsPerSecond": 450.5,
+            "idleGpuW": 0.20800000000000002
+          },
+          "energyNotes": [
+            "mJ/frame range 59.78-92.34 (39%)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/far-cap120/ingot-battery/20261101T210727Z.json",
+            "results/raw/far-cap120/ingot-battery/20261101T211128Z.json",
+            "results/raw/far-cap120/ingot-battery/20261101T211602Z.json",
+            "results/raw/far-cap120/ingot-battery/20261101T213037Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.206948793051207,
+            "onePercentLowFps": 1.876819613518345
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 1.0266165266653644,
+            "totalW": 1.238562091503268
+          }
+        },
+        {
+          "config": "ingot-profile-battery",
+          "runs": 1,
+          "avgFps": 119.3,
+          "onePercentLowFps": 95.69,
+          "pointOnePercentLowFps": 45.78,
+          "p50FrameMs": 8.3621,
+          "p99FrameMs": 8.4693,
+          "avgFpsRange": [
+            119.3,
+            119.3
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.38,
+              "onePercentLowFps": 100.53
+            },
+            "fly": {
+              "avgFps": 119.16,
+              "onePercentLowFps": 87.33
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "background 2.2 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 1,
+          "energy": {
+            "cpuW": 1.872,
+            "gpuW": 7.875,
+            "gpuOverIdleW": 7.685,
+            "totalW": 9.747,
+            "mJPerFrame": 81.696,
+            "cpuMJPerFrame": 15.689,
+            "gpuMJPerFrame": 66.007,
+            "cpuJ": 56.166,
+            "gpuJ": 236.305,
+            "cpuPCoreShare": 0.997,
+            "cpuCores": 0.717,
+            "instructionsPerFrame": 54017558,
+            "wakeupsPerSecond": 524,
+            "idleGpuW": 0.19
+          },
+          "energyNotes": [
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/far-cap120/ingot-profile-battery/20261101T210833Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.204928795071205,
+            "onePercentLowFps": 1.6291819187877756
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 0.997460441492479,
+            "totalW": 1.201997780244173
+          }
+        },
+        {
+          "config": "ingot-battery-direct",
+          "runs": 2,
+          "avgFps": 119.535,
+          "onePercentLowFps": 113.78999999999999,
+          "pointOnePercentLowFps": 93.32,
+          "p50FrameMs": 8.36215,
+          "p99FrameMs": 8.427,
+          "avgFpsRange": [
+            119.49,
+            119.58
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.505,
+              "onePercentLowFps": 112.055
+            },
+            "fly": {
+              "avgFps": 119.58,
+              "onePercentLowFps": 117.635
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 119-120 (0%)",
+            "background 2.1 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 2,
+          "energy": {
+            "cpuW": 1.745,
+            "gpuW": 9.054,
+            "gpuOverIdleW": 8.828,
+            "totalW": 10.798,
+            "mJPerFrame": 90.337,
+            "cpuMJPerFrame": 14.5955,
+            "gpuMJPerFrame": 75.7415,
+            "cpuJ": 52.3475,
+            "gpuJ": 271.6515,
+            "cpuPCoreShare": 0.998,
+            "cpuCores": 0.653,
+            "instructionsPerFrame": 50661612.0,
+            "wakeupsPerSecond": 417.0,
+            "idleGpuW": 0.226
+          },
+          "energyNotes": [
+            "mJ/frame range 86.64-94.03 (8%)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/far-cap120/ingot-battery-direct/20261101T211236Z.json",
+            "results/raw/far-cap120/ingot-battery-direct/20261101T211712Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.2073022926977073,
+            "onePercentLowFps": 1.937345705286456
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 1.1029620042977144,
+            "totalW": 1.3316068565791097
+          }
+        },
+        {
+          "config": "ingot-battery-direct-fastmath",
+          "runs": 2,
+          "avgFps": 119.525,
+          "onePercentLowFps": 110.97999999999999,
+          "pointOnePercentLowFps": 74.56,
+          "p50FrameMs": 8.36175,
+          "p99FrameMs": 8.428550000000001,
+          "avgFpsRange": [
+            119.5,
+            119.55
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.495,
+              "onePercentLowFps": 107.745
+            },
+            "fly": {
+              "avgFps": 119.59,
+              "onePercentLowFps": 118.10499999999999
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 120-120 (0%)",
+            "background 2.2 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 2,
+          "energy": {
+            "cpuW": 1.697,
+            "gpuW": 7.355,
+            "gpuOverIdleW": 7.129,
+            "totalW": 9.052,
+            "mJPerFrame": 75.73400000000001,
+            "cpuMJPerFrame": 14.201,
+            "gpuMJPerFrame": 61.533,
+            "cpuJ": 50.932,
+            "gpuJ": 220.69150000000002,
+            "cpuPCoreShare": 0.998,
+            "cpuCores": 0.645,
+            "instructionsPerFrame": 49301878.0,
+            "wakeupsPerSecond": 408.0,
+            "idleGpuW": 0.226
+          },
+          "energyNotes": [
+            "mJ/frame range 69.11-82.36 (17%)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/far-cap120/ingot-battery-direct-fastmath/20261101T211453Z.json",
+            "results/raw/far-cap120/ingot-battery-direct-fastmath/20261101T212036Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.2072012927987075,
+            "onePercentLowFps": 1.889503703073125
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 0.9246679038874782,
+            "totalW": 1.1162905413737823
+          }
+        },
+        {
+          "config": "ingot-battery-fastmath",
+          "runs": 2,
+          "avgFps": 119.535,
+          "onePercentLowFps": 113.07,
+          "pointOnePercentLowFps": 92.625,
+          "p50FrameMs": 8.362,
+          "p99FrameMs": 8.43295,
+          "avgFpsRange": [
+            119.48,
+            119.59
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.53,
+              "onePercentLowFps": 112.07499999999999
+            },
+            "fly": {
+              "avgFps": 119.545,
+              "onePercentLowFps": 115.185
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 119-120 (0%)",
+            "background 2.2 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 2,
+          "energy": {
+            "cpuW": 1.58,
+            "gpuW": 7.0825,
+            "gpuOverIdleW": 6.8565000000000005,
+            "totalW": 8.661999999999999,
+            "mJPerFrame": 72.4625,
+            "cpuMJPerFrame": 13.217,
+            "gpuMJPerFrame": 59.245999999999995,
+            "cpuJ": 47.4035,
+            "gpuJ": 212.49099999999999,
+            "cpuPCoreShare": 0.9975,
+            "cpuCores": 0.6295,
+            "instructionsPerFrame": 44404733.5,
+            "wakeupsPerSecond": 433.0,
+            "idleGpuW": 0.226
+          },
+          "energyNotes": [
+            "mJ/frame range 67.92-77.00 (13%)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/far-cap120/ingot-battery-fastmath/20261101T211345Z.json",
+            "results/raw/far-cap120/ingot-battery-fastmath/20261101T211820Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.2073022926977073,
+            "onePercentLowFps": 1.9250872563207626
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 0.8847247997655793,
+            "totalW": 1.068195831791836
+          }
+        }
+      ],
+      "idleGpuW": 0.19,
+      "idleBaselines": 3
+    },
+    {
+      "scenario": "standard",
+      "fpsCap": 0,
+      "durationSeconds": 20.0,
+      "warmupSeconds": 5.0,
+      "templateId": "6065a31f-d2c5-429c-9ef2-379235185ee9",
+      "host": {
+        "cpu": "Apple M4 Pro",
+        "model": "Mac16,8",
+        "memoryGB": 24,
+        "macos": "27.2",
+        "macosBuild": "26B5091g",
+        "machine": "arm64",
+        "onBattery": false,
+        "lowPowerMode": false,
+        "thermalWarning": null,
+        "memoryFreePercent": 59,
+        "powerMode": 0,
+        "loadAverage": [
+          5.64,
+          4.64,
+          4.98
+        ]
+      },
+      "resolution": "2560x1440",
+      "renderDistance": 16,
+      "configs": [
+        {
+          "config": "ingot",
+          "runs": 1,
+          "avgFps": 538.19,
+          "onePercentLowFps": 283.93,
+          "pointOnePercentLowFps": 206.47,
+          "p50FrameMs": 1.701,
+          "p99FrameMs": 3.2299,
+          "avgFpsRange": [
+            538.19,
+            538.19
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 472.68,
+              "onePercentLowFps": 273.98
+            },
+            "fly": {
+              "avgFps": 669.27,
+              "onePercentLowFps": 387.85
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "background 2.5 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 1,
+          "energy": {
+            "cpuW": 2.237,
+            "gpuW": 33.613,
+            "gpuOverIdleW": 33.427,
+            "totalW": 35.85,
+            "mJPerFrame": 66.612,
+            "cpuMJPerFrame": 4.156,
+            "gpuMJPerFrame": 62.456,
+            "cpuJ": 44.737,
+            "gpuJ": 672.276,
+            "cpuPCoreShare": 0.998,
+            "cpuCores": 0.844,
+            "instructionsPerFrame": 13026068,
+            "wakeupsPerSecond": 171,
+            "idleGpuW": 0.186
+          },
+          "energyNotes": [],
+          "results": [
+            "results/raw/standard/ingot/20261101T205702Z.json"
+          ]
+        }
+      ],
+      "idleGpuW": 0.186,
+      "idleBaselines": 1
+    },
+    {
+      "scenario": "standard",
+      "fpsCap": 0,
+      "durationSeconds": 30.0,
+      "warmupSeconds": 10.0,
+      "templateId": "6065a31f-d2c5-429c-9ef2-379235185ee9",
+      "host": {
+        "cpu": "Apple M4 Pro",
+        "model": "Mac16,8",
+        "memoryGB": 24,
+        "macos": "27.2",
+        "macosBuild": "26B5091g",
+        "machine": "arm64",
+        "onBattery": false,
+        "lowPowerMode": false,
+        "thermalWarning": null,
+        "memoryFreePercent": 51,
+        "powerMode": 0,
+        "loadAverage": [
+          4.66,
+          5.8,
+          5.5
+        ]
+      },
+      "resolution": "1280x720",
+      "renderDistance": 16,
+      "configs": [
+        {
+          "config": "ingot-half",
+          "runs": 1,
+          "avgFps": 120.02,
+          "onePercentLowFps": 104.68,
+          "pointOnePercentLowFps": 96.94,
+          "p50FrameMs": 8.3025,
+          "p99FrameMs": 9.3384,
+          "avgFpsRange": [
+            120.02,
+            120.02
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 120.04,
+              "onePercentLowFps": 103.78
+            },
+            "fly": {
+              "avgFps": 119.99,
+              "onePercentLowFps": 107.24
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "background 2.5 cores",
+            "frame rate locked to the 120 Hz display refresh (avg 120.0 FPS, p50 8.30 ms) although vsync is off (1x)",
+            "dirty tree"
+          ],
+          "energyRuns": 1,
+          "energy": {
+            "cpuW": 1.028,
+            "gpuW": 1.716,
+            "gpuOverIdleW": 1.534,
+            "totalW": 2.743,
+            "mJPerFrame": 22.857,
+            "cpuMJPerFrame": 8.561,
+            "gpuMJPerFrame": 14.296,
+            "cpuJ": 30.83,
+            "gpuJ": 51.479,
+            "cpuPCoreShare": 0.99,
+            "cpuCores": 0.492,
+            "instructionsPerFrame": 26564797,
+            "wakeupsPerSecond": 923,
+            "idleGpuW": 0.182
+          },
+          "energyNotes": [],
+          "results": [
+            "results/raw/standard/ingot-half/20261101T203227Z.json"
+          ]
+        }
+      ],
+      "idleGpuW": 0.182,
+      "idleBaselines": 1
+    },
+    {
+      "scenario": "standard",
+      "fpsCap": 0,
+      "durationSeconds": 30.0,
+      "warmupSeconds": 10.0,
+      "templateId": "6065a31f-d2c5-429c-9ef2-379235185ee9",
+      "host": {
+        "cpu": "Apple M4 Pro",
+        "model": "Mac16,8",
+        "memoryGB": 24,
+        "macos": "27.2",
+        "macosBuild": "26B5091g",
+        "machine": "arm64",
+        "onBattery": false,
+        "lowPowerMode": false,
+        "thermalWarning": null,
+        "memoryFreePercent": 50,
+        "powerMode": 0,
+        "loadAverage": [
+          7.84,
+          5.91,
+          5.42
+        ]
+      },
+      "resolution": "2560x1440",
+      "renderDistance": 16,
+      "configs": [
+        {
+          "config": "vanilla",
+          "runs": 1,
+          "avgFps": 212.13,
+          "onePercentLowFps": 73.9,
+          "pointOnePercentLowFps": 52.38,
+          "p50FrameMs": 4.1846,
+          "p99FrameMs": 10.8046,
+          "avgFpsRange": [
+            212.13,
+            212.13
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 230.27,
+              "onePercentLowFps": 80.64
+            },
+            "fly": {
+              "avgFps": 175.84,
+              "onePercentLowFps": 70.36
+            }
+          },
+          "backend": "OpenGL",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0 (disabled)"
+          ],
+          "notes": [
+            "background 1.9 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 1,
+          "energy": {
+            "cpuW": 2.886,
+            "gpuW": 9.673,
+            "gpuOverIdleW": 9.491,
+            "totalW": 12.56,
+            "mJPerFrame": 59.208,
+            "cpuMJPerFrame": 13.607,
+            "gpuMJPerFrame": 45.6,
+            "cpuJ": 86.597,
+            "gpuJ": 290.2,
+            "cpuPCoreShare": 0.999,
+            "cpuCores": 0.703,
+            "instructionsPerFrame": 40216311,
+            "wakeupsPerSecond": 376,
+            "idleGpuW": 0.182
+          },
+          "energyNotes": [],
+          "results": [
+            "results/raw/standard/vanilla/20261101T202913Z.json"
+          ]
+        }
+      ],
+      "idleGpuW": 0.182,
+      "idleBaselines": 1
+    },
+    {
+      "scenario": "standard",
+      "fpsCap": 120,
+      "durationSeconds": 10.0,
+      "warmupSeconds": 3.0,
+      "templateId": "6065a31f-d2c5-429c-9ef2-379235185ee9",
+      "host": {
+        "cpu": "Apple M4 Pro",
+        "model": "Mac16,8",
+        "memoryGB": 24,
+        "macos": "27.2",
+        "macosBuild": "26B5091g",
+        "machine": "arm64",
+        "onBattery": false,
+        "lowPowerMode": false,
+        "thermalWarning": null,
+        "memoryFreePercent": 60,
+        "powerMode": 0,
+        "loadAverage": [
+          5.0,
+          4.36,
+          5.01
+        ]
+      },
+      "resolution": "2560x1440",
+      "renderDistance": 16,
+      "configs": [
+        {
+          "config": "ingot-merge",
+          "runs": 2,
+          "avgFps": 119.52000000000001,
+          "onePercentLowFps": 100.655,
+          "pointOnePercentLowFps": 61.665000000000006,
+          "p50FrameMs": 8.3603,
+          "p99FrameMs": 8.5408,
+          "avgFpsRange": [
+            119.5,
+            119.54
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.505,
+              "onePercentLowFps": 95.255
+            },
+            "fly": {
+              "avgFps": 119.54499999999999,
+              "onePercentLowFps": 114.095
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 120-120 (0%)",
+            "background 2.8 cores",
+            "JIT still compiling in 2 run(s)",
+            "dirty tree"
+          ],
+          "energyRuns": 0,
+          "energy": {
+            "cpuW": null,
+            "gpuW": null,
+            "gpuOverIdleW": null,
+            "totalW": null,
+            "mJPerFrame": null,
+            "cpuMJPerFrame": null,
+            "gpuMJPerFrame": null,
+            "cpuJ": null,
+            "gpuJ": null,
+            "cpuPCoreShare": null,
+            "cpuCores": null,
+            "instructionsPerFrame": null,
+            "wakeupsPerSecond": null,
+            "idleGpuW": null
+          },
+          "energyNotes": [
+            "no energy in 2 run(s)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/standard-cap120/ingot-merge/20261101T205356Z.json",
+            "results/raw/standard-cap120/ingot-merge/20261101T205500Z.json"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "standard",
+      "fpsCap": 120,
+      "durationSeconds": 30.0,
+      "warmupSeconds": 10.0,
+      "templateId": "6065a31f-d2c5-429c-9ef2-379235185ee9",
+      "host": {
+        "cpu": "Apple M4 Pro",
+        "model": "Mac16,8",
+        "memoryGB": 24,
+        "macos": "27.2",
+        "macosBuild": "26B5091g",
+        "machine": "arm64",
+        "onBattery": false,
+        "lowPowerMode": false,
+        "thermalWarning": null,
+        "memoryFreePercent": 49,
+        "powerMode": 0,
+        "loadAverage": [
+          4.31,
+          5.02,
+          5.02
+        ]
+      },
+      "resolution": "1280x720",
+      "renderDistance": 16,
+      "configs": [
+        {
+          "config": "ingot-battery-half",
+          "runs": 2,
+          "avgFps": 119.505,
+          "onePercentLowFps": 113.84,
+          "pointOnePercentLowFps": 101.75,
+          "p50FrameMs": 8.3649,
+          "p99FrameMs": 8.536449999999999,
+          "avgFpsRange": [
+            119.5,
+            119.51
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.535,
+              "onePercentLowFps": 114.805
+            },
+            "fly": {
+              "avgFps": 119.45500000000001,
+              "onePercentLowFps": 112.14500000000001
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 120-120 (0%)",
+            "background 2.3 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 2,
+          "energy": {
+            "cpuW": 1.033,
+            "gpuW": 1.3685,
+            "gpuOverIdleW": 1.3025,
+            "totalW": 2.4015,
+            "mJPerFrame": 20.0965,
+            "cpuMJPerFrame": 8.643,
+            "gpuMJPerFrame": 11.454,
+            "cpuJ": 30.993,
+            "gpuJ": 41.073,
+            "cpuPCoreShare": 0.9904999999999999,
+            "cpuCores": 0.511,
+            "instructionsPerFrame": 28504237.5,
+            "wakeupsPerSecond": 446.5,
+            "idleGpuW": 0.066
+          },
+          "energyNotes": [
+            "mJ/frame range 19.64-20.55 (5%)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/standard-cap120/ingot-battery-half/20261101T202123Z.json",
+            "results/raw/standard-cap120/ingot-battery-half/20261101T202648Z.json"
+          ]
+        }
+      ],
+      "idleGpuW": 0.066,
+      "idleBaselines": 1
+    },
+    {
+      "scenario": "standard",
+      "fpsCap": 120,
+      "durationSeconds": 30.0,
+      "warmupSeconds": 10.0,
+      "templateId": "6065a31f-d2c5-429c-9ef2-379235185ee9",
+      "host": {
+        "cpu": "Apple M4 Pro",
+        "model": "Mac16,8",
+        "memoryGB": 24,
+        "macos": "27.2",
+        "macosBuild": "26B5091g",
+        "machine": "arm64",
+        "onBattery": false,
+        "lowPowerMode": false,
+        "thermalWarning": null,
+        "memoryFreePercent": 46,
+        "powerMode": 0,
+        "loadAverage": [
+          4.47,
+          5.27,
+          5.1
+        ]
+      },
+      "resolution": "2560x1440",
+      "renderDistance": 16,
+      "configs": [
+        {
+          "config": "vanilla",
+          "runs": 5,
+          "avgFps": 115.42,
+          "onePercentLowFps": 69.47,
+          "pointOnePercentLowFps": 57.34,
+          "p50FrameMs": 8.3345,
+          "p99FrameMs": 13.0561,
+          "avgFpsRange": [
+            114.39,
+            116.61
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 116.25,
+              "onePercentLowFps": 71.66
+            },
+            "fly": {
+              "avgFps": 114.99,
+              "onePercentLowFps": 67.17
+            }
+          },
+          "backend": "OpenGL",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0 (disabled)"
+          ],
+          "notes": [
+            "avg range 114-117 (2%)",
+            "background 2.0 cores",
+            "below the FPS cap in 4 run(s)",
+            "dirty tree"
+          ],
+          "energyRuns": 5,
+          "energy": {
+            "cpuW": 1.717,
+            "gpuW": 2.185,
+            "gpuOverIdleW": 1.984,
+            "totalW": 3.799,
+            "mJPerFrame": 32.672,
+            "cpuMJPerFrame": 14.727,
+            "gpuMJPerFrame": 18.932,
+            "cpuJ": 51.529,
+            "gpuJ": 65.542,
+            "cpuPCoreShare": 0.998,
+            "cpuCores": 0.602,
+            "instructionsPerFrame": 50003323,
+            "wakeupsPerSecond": 438,
+            "idleGpuW": 0.164
+          },
+          "energyNotes": [
+            "mJ/frame range 29.65-38.68 (28%)",
+            "energy warnings in 2 run(s)",
+            "below the FPS cap in 4 run(s)",
+            "vanilla frame limiter"
+          ],
+          "results": [
+            "results/raw/standard-cap120/vanilla/20261101T202228Z.json",
+            "results/raw/standard-cap120/vanilla/20261101T204623Z.json",
+            "results/raw/standard-cap120/vanilla/20261101T205039Z.json",
+            "results/raw/standard-cap120/vanilla/20261101T212344Z.json",
+            "results/raw/standard-cap120/vanilla/20261101T212552Z.json"
+          ]
+        },
+        {
+          "config": "ingot",
+          "runs": 2,
+          "avgFps": 119.49000000000001,
+          "onePercentLowFps": 111.54499999999999,
+          "pointOnePercentLowFps": 93.58,
+          "p50FrameMs": 8.364999999999998,
+          "p99FrameMs": 8.536000000000001,
+          "avgFpsRange": [
+            119.45,
+            119.53
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.475,
+              "onePercentLowFps": 109.59
+            },
+            "fly": {
+              "avgFps": 119.52000000000001,
+              "onePercentLowFps": 116.175
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 119-120 (0%)",
+            "background 2.1 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 2,
+          "energy": {
+            "cpuW": 0.9755,
+            "gpuW": 2.4930000000000003,
+            "gpuOverIdleW": 2.4269999999999996,
+            "totalW": 3.4684999999999997,
+            "mJPerFrame": 29.025,
+            "cpuMJPerFrame": 8.163499999999999,
+            "gpuMJPerFrame": 20.862000000000002,
+            "cpuJ": 29.266,
+            "gpuJ": 74.789,
+            "cpuPCoreShare": 0.9855,
+            "cpuCores": 0.5295000000000001,
+            "instructionsPerFrame": 27929000.0,
+            "wakeupsPerSecond": 303.5,
+            "idleGpuW": 0.066
+          },
+          "energyNotes": [
+            "mJ/frame range 28.95-29.11 (1%)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/standard-cap120/ingot/20261101T201915Z.json",
+            "results/raw/standard-cap120/ingot/20261101T202334Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.035262519494022,
+            "onePercentLowFps": 1.6056571181805095
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 0.8883753672869736,
+            "totalW": 0.9130034219531455
+          }
+        },
+        {
+          "config": "ingot-battery",
+          "runs": 4,
+          "avgFps": 119.495,
+          "onePercentLowFps": 110.28,
+          "pointOnePercentLowFps": 89.76,
+          "p50FrameMs": 8.363949999999999,
+          "p99FrameMs": 8.5667,
+          "avgFpsRange": [
+            119.48,
+            119.53
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.505,
+              "onePercentLowFps": 108.52
+            },
+            "fly": {
+              "avgFps": 119.52,
+              "onePercentLowFps": 115.455
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 119-120 (0%)",
+            "background 2.1 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 4,
+          "energy": {
+            "cpuW": 0.9175,
+            "gpuW": 2.0795,
+            "gpuOverIdleW": 1.9645000000000001,
+            "totalW": 2.9539999999999997,
+            "mJPerFrame": 24.7175,
+            "cpuMJPerFrame": 7.6754999999999995,
+            "gpuMJPerFrame": 17.397,
+            "cpuJ": 27.5175,
+            "gpuJ": 62.3785,
+            "cpuPCoreShare": 0.9844999999999999,
+            "cpuCores": 0.515,
+            "instructionsPerFrame": 27760729.5,
+            "wakeupsPerSecond": 441.5,
+            "idleGpuW": 0.115
+          },
+          "energyNotes": [
+            "mJ/frame range 21.71-28.75 (28%)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/standard-cap120/ingot-battery/20261101T202019Z.json",
+            "results/raw/standard-cap120/ingot-battery/20261101T202439Z.json",
+            "results/raw/standard-cap120/ingot-battery/20261101T212448Z.json",
+            "results/raw/standard-cap120/ingot-battery/20261101T212656Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.0353058395425403,
+            "onePercentLowFps": 1.5874478192025334
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 0.7565346474045055,
+            "totalW": 0.7775730455382995
+          }
+        },
+        {
+          "config": "ingot-nomerge",
+          "runs": 1,
+          "avgFps": 119.46,
+          "onePercentLowFps": 110.93,
+          "pointOnePercentLowFps": 100.41,
+          "p50FrameMs": 8.364,
+          "p99FrameMs": 8.7049,
+          "avgFpsRange": [
+            119.46,
+            119.46
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.46,
+              "onePercentLowFps": 110.11
+            },
+            "fly": {
+              "avgFps": 119.47,
+              "onePercentLowFps": 113.81
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "background 2.0 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 1,
+          "energy": {
+            "cpuW": 0.972,
+            "gpuW": 2.094,
+            "gpuOverIdleW": 1.639,
+            "totalW": 3.065,
+            "mJPerFrame": 25.661,
+            "cpuMJPerFrame": 8.135,
+            "gpuMJPerFrame": 17.525,
+            "cpuJ": 29.157,
+            "gpuJ": 62.811,
+            "cpuPCoreShare": 0.987,
+            "cpuCores": 0.513,
+            "instructionsPerFrame": 28873220,
+            "wakeupsPerSecond": 584,
+            "idleGpuW": 0.455
+          },
+          "energyNotes": [
+            "energy warnings in 1 run(s)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/standard-cap120/ingot-nomerge/20261101T204831Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.035002599202911,
+            "onePercentLowFps": 1.596804375989636
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 0.7854125857002939,
+            "totalW": 0.8067912608581206
+          }
+        },
+        {
+          "config": "ingot-g1",
+          "runs": 2,
+          "avgFps": 119.44,
+          "onePercentLowFps": 108.435,
+          "pointOnePercentLowFps": 83.02,
+          "p50FrameMs": 8.36435,
+          "p99FrameMs": 8.623000000000001,
+          "avgFpsRange": [
+            119.42,
+            119.46
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.485,
+              "onePercentLowFps": 110.84
+            },
+            "fly": {
+              "avgFps": 119.35,
+              "onePercentLowFps": 104.185
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "avg range 119-119 (0%)",
+            "background 2.1 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 2,
+          "energy": {
+            "cpuW": 1.0545,
+            "gpuW": 2.1915,
+            "gpuOverIdleW": 1.7365,
+            "totalW": 3.246,
+            "mJPerFrame": 27.1785,
+            "cpuMJPerFrame": 8.8305,
+            "gpuMJPerFrame": 18.348,
+            "cpuJ": 31.6435,
+            "gpuJ": 65.7505,
+            "cpuPCoreShare": 0.9875,
+            "cpuCores": 0.5305,
+            "instructionsPerFrame": 30986423.5,
+            "wakeupsPerSecond": 515.0,
+            "idleGpuW": 0.455
+          },
+          "energyNotes": [
+            "mJ/frame range 27.10-27.26 (1%)",
+            "energy warnings in 2 run(s)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/standard-cap120/ingot-g1/20261101T204414Z.json",
+            "results/raw/standard-cap120/ingot-g1/20261101T204935Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.0348293190088373,
+            "onePercentLowFps": 1.5608895926299122
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 0.831859084231146,
+            "totalW": 0.8544353777309819
+          }
+        },
+        {
+          "config": "ingot-merge",
+          "runs": 1,
+          "avgFps": 119.5,
+          "onePercentLowFps": 113.15,
+          "pointOnePercentLowFps": 108.7,
+          "p50FrameMs": 8.3643,
+          "p99FrameMs": 8.6605,
+          "avgFpsRange": [
+            119.5,
+            119.5
+          ],
+          "phases": {
+            "spin": {
+              "avgFps": 119.51,
+              "onePercentLowFps": 113.26
+            },
+            "fly": {
+              "avgFps": 119.47,
+              "onePercentLowFps": 113.07
+            }
+          },
+          "backend": "Metal",
+          "gpu": "Apple M4 Pro",
+          "mods": [
+            "ingot 0.1.0"
+          ],
+          "notes": [
+            "background 1.9 cores",
+            "dirty tree"
+          ],
+          "energyRuns": 1,
+          "energy": {
+            "cpuW": 0.865,
+            "gpuW": 2.149,
+            "gpuOverIdleW": 1.694,
+            "totalW": 3.015,
+            "mJPerFrame": 25.227,
+            "cpuMJPerFrame": 7.24,
+            "gpuMJPerFrame": 17.987,
+            "cpuJ": 25.956,
+            "gpuJ": 64.482,
+            "cpuPCoreShare": 0.986,
+            "cpuCores": 0.486,
+            "instructionsPerFrame": 26274745,
+            "wakeupsPerSecond": 593,
+            "idleGpuW": 0.455
+          },
+          "energyNotes": [
+            "energy warnings in 1 run(s)",
+            "ingot frame limiter"
+          ],
+          "results": [
+            "results/raw/standard-cap120/ingot-merge/20261101T204727Z.json"
+          ],
+          "vsVanilla": {
+            "avgFps": 1.0353491595910587,
+            "onePercentLowFps": 1.6287606160932777
+          },
+          "energyVsVanilla": {
+            "mJPerFrame": 0.7721290401567091,
+            "totalW": 0.793629902605949
+          }
+        }
+      ],
+      "idleGpuW": 0.164,
+      "idleBaselines": 3
+    }
+  ]
+}

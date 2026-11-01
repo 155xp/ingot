@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-#define INGOT_ABI_VERSION 1u
+#define INGOT_ABI_VERSION 2u
 #define INGOT_EXPORT __attribute__((visibility("default")))
 #define INGOT_HOT
 
@@ -129,6 +129,10 @@ INGOT_EXPORT void *ingot_sampler_create(void *device, uint32_t address_u, uint32
 // ---------------------------------------------------------------------------------------------------------------
 // Shaders and pipelines
 // ---------------------------------------------------------------------------------------------------------------
+
+// Floating-point mode for every shader compiled afterwards: 0 safe (IEEE 754; the library's default until this is
+// called), 1 relaxed, 2 fast (MTLMathMode). Call before any pipeline is created.
+INGOT_EXPORT void ingot_set_shader_math(uint32_t mode);
 
 // Compiles MSL source (newLibraryWithSource; MTLCompileOptions: mathMode safe (no fast math), languageVersion 2.4,
 // preserveInvariance = YES). Thread-safe; wraps its own @autoreleasepool.
@@ -267,6 +271,13 @@ INGOT_EXPORT void *ingot_render_begin(void *cmd, const void *desc);
 // endEncoding and release.
 INGOT_EXPORT void ingot_render_end(void *encoder);
 
+// Clears the whole depth attachment of an open render pass to `depth` with a full-screen triangle (depth test always,
+// depth write on, color writes masked), so a depth clear between two passes on the same attachments costs no store
+// and reload on a tile-based GPU. color_format is the pass's color attachment 0 (MTLPixelFormatInvalid if none; at
+// most one color attachment). Leaves pipeline, depth-stencil state, viewport, scissor and fragment buffer 0 changed.
+INGOT_EXPORT void ingot_render_clear_depth(void *device, void *encoder, uint32_t color_format, uint32_t depth_format,
+                                           uint32_t width, uint32_t height, float depth);
+
 INGOT_HOT
 INGOT_EXPORT void ingot_render_set_pipeline(void *encoder, void *pipeline_state);
 INGOT_HOT
@@ -370,7 +381,14 @@ INGOT_EXPORT void ingot_surface_destroy(void *surface);
 INGOT_EXPORT void ingot_surface_configure(void *surface, uint32_t width, uint32_t height, uint32_t display_sync, uint32_t max_drawables);
 
 // [layer nextDrawable] as a retained handle, or 0 if none became available within ~1 s (allowsNextDrawableTimeout).
+// Takes the drawable ingot_surface_try_drawable prefetched instead, if there is one.
 INGOT_EXPORT void *ingot_surface_next_drawable(void *surface);
+
+// Non-blocking variant for frame rates above the display's: in a window, CAMetalLayer hands out drawables only as fast
+// as the compositor shows them, so nextDrawable would hold the game to the refresh rate. Returns the drawable a
+// background acquire got since the previous call (retained), or 0 if none is ready yet, and starts the next background
+// acquire. A frame without a drawable is rendered but not shown. Render thread.
+INGOT_EXPORT void *ingot_surface_try_drawable(void *surface);
 
 // Encodes a render pass on cmd that draws src_texture (any float-readable color format, MTLTextureUsageShaderRead)
 // into the drawable 1:1, anchored top-left, then schedules presentDrawable: on cmd. The copied size is
@@ -400,6 +418,15 @@ INGOT_EXPORT uint32_t ingot_power_state(void);
 // exempt from timer coalescing (NOTE_CRITICAL), falling back to mach_wait_until. Never returns early; typically wakes
 // within ~25-50 us of the deadline. Returns immediately if the deadline has passed.
 INGOT_EXPORT void ingot_wait_until(int64_t deadline_ns);
+
+#define INGOT_QOS_USER_INTERACTIVE 0x21u  // QOS_CLASS_USER_INTERACTIVE
+#define INGOT_QOS_USER_INITIATED   0x19u  // QOS_CLASS_USER_INITIATED
+#define INGOT_QOS_DEFAULT          0x15u  // QOS_CLASS_DEFAULT
+#define INGOT_QOS_UTILITY          0x11u  // QOS_CLASS_UTILITY
+#define INGOT_QOS_BACKGROUND       0x09u  // QOS_CLASS_BACKGROUND
+// pthread_set_qos_class_self_np(qos_class, 0) on the calling thread. On Apple silicon the QoS class decides which
+// cores the scheduler prefers: utility and background work runs on the efficiency cores. Returns 0 or an errno.
+INGOT_EXPORT int32_t ingot_thread_set_qos(uint32_t qos_class);
 
 // Current host time in the System.nanoTime() clock domain: mach_absolute_time() * numer / denom, which is exactly how
 // the JVM computes nanoTime on macOS (not mach_continuous_time, which also counts sleep).

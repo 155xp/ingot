@@ -66,9 +66,13 @@ static id<MTLRenderPipelineState> create_util_pipeline(IngotDevice *device, Ingo
     }
     MTLRenderPipelineDescriptor *desc = [MTLRenderPipelineDescriptor new];
     desc.vertexFunction = [device->util_library newFunctionWithName:@"ingot_fullscreen_vs"];
-    NSString *fragment = kind == IngotUtilKindBlit ? @"ingot_blit_fs" : clear_fragment(color_format, depth_format);
+    NSString *fragment = kind == IngotUtilKindBlit ? @"ingot_blit_fs"
+        : kind == IngotUtilKindClearDepthInPass ? @"ingot_clear_depth_fs" : clear_fragment(color_format, depth_format);
     desc.fragmentFunction = [device->util_library newFunctionWithName:fragment];
     desc.colorAttachments[0].pixelFormat = color_format;
+    if (kind == IngotUtilKindClearDepthInPass) {
+        desc.colorAttachments[0].writeMask = MTLColorWriteMaskNone;
+    }
     desc.depthAttachmentPixelFormat = depth_format;
     if (device->labels) {
         desc.label = kind == IngotUtilKindBlit ? @"Ingot present blit" : @"Ingot clear region";
@@ -215,5 +219,25 @@ INGOT_EXPORT void ingot_surface_blit(void *surface, void *cmd, void *drawable, v
         }
         [encoder endEncoding];
         [command_buffer presentDrawable:target];
+    }
+}
+
+INGOT_EXPORT void ingot_render_clear_depth(void *device, void *encoder, uint32_t color_format, uint32_t depth_format,
+                                           uint32_t width, uint32_t height, float depth) {
+    @autoreleasepool {
+        __unsafe_unretained IngotDevice *dev = INGOT_OBJ(IngotDevice *, device);
+        __unsafe_unretained id<MTLRenderCommandEncoder> render = INGOT_OBJ(id<MTLRenderCommandEncoder>, encoder);
+        id<MTLRenderPipelineState> pipeline = ingot_util_pipeline(dev, IngotUtilKindClearDepthInPass, (MTLPixelFormat)color_format,
+                                                                  (MTLPixelFormat)depth_format);
+        if (pipeline == nil) {
+            return;
+        }
+        [render setRenderPipelineState:pipeline];
+        [render setDepthStencilState:util_depth_write(dev)];
+        [render setViewport:(MTLViewport){0, 0, (double)width, (double)height, 0, 1}];
+        [render setScissorRect:(MTLScissorRect){0, 0, width, height}];
+        ClearParams params = {{0, 0, 0, 0}, depth, {0, 0, 0}};
+        [render setFragmentBytes:&params length:sizeof(params) atIndex:0];
+        [render drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
     }
 }

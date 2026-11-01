@@ -28,11 +28,17 @@ INGOT_EXPORT void *ingot_surface_create(void *device, void *metal_layer) {
         layer.opaque = YES;
         layer.presentsWithTransaction = NO;
         layer.allowsNextDrawableTimeout = YES;
+        // A drawable smaller than the layer (Ingot's half-resolution mode) is stretched over it. Exactly 2x nearest
+        // keeps the pixel-art GUI and text as sharp as native rendering at the matching GUI scale.
+        layer.magnificationFilter = kCAFilterNearest;
 
         IngotSurface *surface = [IngotSurface new];
         surface->device = dev;
         surface->layer = layer;
         surface->blit_pipeline = blit;
+        surface->acquire_queue = dispatch_queue_create("dev.ingot.drawable",
+            dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_USER_INTERACTIVE, 0));
+        surface->ready_lock = OS_UNFAIR_LOCK_INIT;
         return (void *)CFBridgingRetain(surface);
     }
 }
@@ -42,13 +48,61 @@ INGOT_EXPORT void ingot_surface_destroy(void *surface) {
         return;
     }
     @autoreleasepool {
+        IngotSurface *surf = INGOT_OBJ(IngotSurface *, surface);
+        // A background acquire still holds the layer; wait for it (nextDrawable times out after ~1 s at most).
+        dispatch_sync(surf->acquire_queue, ^{});
+        os_unfair_lock_lock(&surf->ready_lock);
+        surf->ready = nil;
+        os_unfair_lock_unlock(&surf->ready_lock);
         CFBridgingRelease(surface);
+    }
+}
+
+// ready_lock held, no acquire running: acquires the next drawable on the surface's queue.
+static void surface_prefetch(IngotSurface *surface) {
+    surface->acquiring = true;
+    uint64_t generation = surface->generation;
+    dispatch_async(surface->acquire_queue, ^{
+        @autoreleasepool {
+            id<CAMetalDrawable> drawable = [surface->layer nextDrawable];
+            os_unfair_lock_lock(&surface->ready_lock);
+            if (drawable != nil && surface->generation == generation && surface->ready == nil) {
+                surface->ready = drawable;
+            }
+            surface->acquiring = false;
+            os_unfair_lock_unlock(&surface->ready_lock);
+        }
+    });
+}
+
+// The prefetched drawable (nil if none), taking it out of the slot. Starts the next acquire when prefetch is set.
+static id<CAMetalDrawable> surface_take_ready(IngotSurface *surface, bool prefetch) {
+    os_unfair_lock_lock(&surface->ready_lock);
+    id<CAMetalDrawable> drawable = surface->ready;
+    surface->ready = nil;
+    if (prefetch && !surface->acquiring) {
+        surface_prefetch(surface);
+    }
+    os_unfair_lock_unlock(&surface->ready_lock);
+    return drawable;
+}
+
+INGOT_EXPORT void *ingot_surface_try_drawable(void *surface) {
+    @autoreleasepool {
+        id<CAMetalDrawable> drawable = surface_take_ready(INGOT_OBJ(IngotSurface *, surface), true);
+        return drawable != nil ? (void *)CFBridgingRetain(drawable) : NULL;
     }
 }
 
 INGOT_EXPORT void ingot_surface_configure(void *surface, uint32_t width, uint32_t height, uint32_t display_sync, uint32_t max_drawables) {
     @autoreleasepool {
-        CAMetalLayer *layer = INGOT_OBJ(IngotSurface *, surface)->layer;
+        IngotSurface *surf = INGOT_OBJ(IngotSurface *, surface);
+        CAMetalLayer *layer = surf->layer;
+        // A prefetched drawable has the old size; drop it, and any acquire already running.
+        os_unfair_lock_lock(&surf->ready_lock);
+        surf->generation++;
+        surf->ready = nil;
+        os_unfair_lock_unlock(&surf->ready_lock);
         layer.drawableSize = CGSizeMake(width, height);
         layer.displaySyncEnabled = display_sync != 0;
         // CAMetalLayer accepts only 2 or 3.
@@ -58,7 +112,11 @@ INGOT_EXPORT void ingot_surface_configure(void *surface, uint32_t width, uint32_
 
 INGOT_EXPORT void *ingot_surface_next_drawable(void *surface) {
     @autoreleasepool {
-        id<CAMetalDrawable> drawable = [INGOT_OBJ(IngotSurface *, surface)->layer nextDrawable];
+        IngotSurface *surf = INGOT_OBJ(IngotSurface *, surface);
+        id<CAMetalDrawable> drawable = surface_take_ready(surf, false);
+        if (drawable == nil) {
+            drawable = [surf->layer nextDrawable];
+        }
         if (drawable == nil) {
             ingot_set_error_cstr("nextDrawable returned nil (no drawable became available within the timeout)");
             return NULL;

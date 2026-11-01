@@ -13,7 +13,7 @@ public final class Mtl {
 	private Mtl() {
 	}
 
-	public static final int ABI_VERSION = 1;
+	public static final int ABI_VERSION = 2;
 	public static final int DEVICE_FLAG_DEBUG_LABELS = 1;
 	public static final int DEVICE_FLAG_RETAIN_REFS = 2;
 	public static final int QUERY_UNIFIED_MEMORY = 1;
@@ -35,6 +35,11 @@ public final class Mtl {
 	public static final int STAGE_FRAGMENT = 2;
 	public static final int POWER_LOW_POWER_MODE = 1;
 	public static final int POWER_ON_BATTERY = 2;
+	public static final int QOS_USER_INTERACTIVE = 0x21;
+	public static final int QOS_USER_INITIATED = 0x19;
+	public static final int QOS_DEFAULT = 0x15;
+	public static final int QOS_UTILITY = 0x11;
+	public static final int QOS_BACKGROUND = 0x09;
 
 	private static final Linker LINKER = Linker.nativeLinker();
 	private static final SymbolLookup LIB = NativeLibrary.lookup();
@@ -250,6 +255,16 @@ public final class Mtl {
 		}
 	}
 
+	private static final MethodHandle H_SET_SHADER_MATH = link("ingot_set_shader_math", FunctionDescriptor.ofVoid(JAVA_INT), false);
+
+	public static void setShaderMath(int mode) {
+		try {
+			H_SET_SHADER_MATH.invokeExact(mode);
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
+	}
+
 	private static final MethodHandle H_LIBRARY_CREATE = link("ingot_library_create", FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG, JAVA_LONG), false);
 
 	public static long libraryCreate(long device, long msl_source, long label) {
@@ -435,6 +450,16 @@ public final class Mtl {
 	public static void renderEnd(long encoder) {
 		try {
 			H_RENDER_END.invokeExact(encoder);
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
+	}
+
+	private static final MethodHandle H_RENDER_CLEAR_DEPTH = link("ingot_render_clear_depth", FunctionDescriptor.ofVoid(JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, JAVA_FLOAT), false);
+
+	public static void renderClearDepth(long device, long encoder, int color_format, int depth_format, int width, int height, float depth) {
+		try {
+			H_RENDER_CLEAR_DEPTH.invokeExact(device, encoder, color_format, depth_format, width, height, depth);
 		} catch (Throwable t) {
 			throw rethrow(t);
 		}
@@ -700,6 +725,16 @@ public final class Mtl {
 		}
 	}
 
+	private static final MethodHandle H_SURFACE_TRY_DRAWABLE = link("ingot_surface_try_drawable", FunctionDescriptor.of(JAVA_LONG, JAVA_LONG), false);
+
+	public static long surfaceTryDrawable(long surface) {
+		try {
+			return (long) H_SURFACE_TRY_DRAWABLE.invokeExact(surface);
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
+	}
+
 	private static final MethodHandle H_SURFACE_BLIT = link("ingot_surface_blit", FunctionDescriptor.ofVoid(JAVA_LONG, JAVA_LONG, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_INT, JAVA_INT), false);
 
 	public static void surfaceBlit(long surface, long cmd, long drawable, long src_texture, int src_width, int src_height, int flip_y) {
@@ -745,6 +780,16 @@ public final class Mtl {
 	public static void waitUntil(long deadline_ns) {
 		try {
 			H_WAIT_UNTIL.invokeExact(deadline_ns);
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
+	}
+
+	private static final MethodHandle H_THREAD_SET_QOS = link("ingot_thread_set_qos", FunctionDescriptor.of(JAVA_INT, JAVA_INT), false);
+
+	public static int threadSetQos(int qos_class) {
+		try {
+			return (int) H_THREAD_SET_QOS.invokeExact(qos_class);
 		} catch (Throwable t) {
 			throw rethrow(t);
 		}

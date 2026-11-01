@@ -36,6 +36,8 @@ public final class MetalSurface implements GpuSurfaceBackend {
 	private static final long CLOSE_TIMEOUT_NS = 1_000_000_000L;
 
 	private static @Nullable MetalSurface current;
+	/** Set by PowerPolicy each frame: the frame limit is above the display's refresh rate and vsync is off. */
+	private static boolean presentWithoutWaiting;
 
 	private final MetalDevice device;
 	private final BooleanSupplier isIconified;
@@ -76,6 +78,15 @@ public final class MetalSurface implements GpuSurfaceBackend {
 	/** The live surface (for occlusion / refresh-rate queries by the energy policy), or null. CONTRACT */
 	public static @Nullable MetalSurface current() {
 		return current;
+	}
+
+	/**
+	 * Uncapped presentation: blitFromTexture takes a drawable only when one is already free and otherwise skips showing
+	 * the frame, instead of waiting for the compositor, which in a window releases drawables only at the display's
+	 * refresh rate. Render thread.
+	 */
+	public static void setPresentWithoutWaiting(boolean value) {
+		presentWithoutWaiting = value;
 	}
 
 	/** True when any part of the window is visible on screen. Main thread. CONTRACT */
@@ -127,10 +138,12 @@ public final class MetalSurface implements GpuSurfaceBackend {
 		if (this.skipWhenOccluded && !this.isVisible()) {
 			return;
 		}
-		long drawable = Mtl.surfaceNextDrawable(this.surface);
+		boolean withoutWaiting = presentWithoutWaiting;
+		long drawable = withoutWaiting ? Mtl.surfaceTryDrawable(this.surface) : Mtl.surfaceNextDrawable(this.surface);
 		if (drawable == 0L) {
-			// No drawable within the layer's timeout: skip this frame and have Minecraft reconfigure the surface.
-			this.suboptimal = true;
+			// Uncapped: no drawable free yet, so this frame is not shown. Otherwise none came within the layer's
+			// timeout: skip this frame and have Minecraft reconfigure the surface.
+			this.suboptimal |= !withoutWaiting;
 			return;
 		}
 		long commandBuffer = ((MetalCommandEncoder) commandEncoder).commandBufferForExternalPass();

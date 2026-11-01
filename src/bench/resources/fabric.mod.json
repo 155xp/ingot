@@ -1,0 +1,21 @@
+{
+	"schemaVersion": 1,
+	"id": "ingot-bench",
+	"version": "0.1.0",
+	"name": "Ingot Benchmark Harness",
+	"description": "Deterministic frame-time benchmark used to compare Ingot against vanilla and the mainstream performance mods. Completely inert unless -Dingot.bench.scenario is set.",
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"dev.ingot.bench.BenchMod"
+		]
+	},
+	"mixins": [
+		"ingot-bench.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3"
+	}
+}

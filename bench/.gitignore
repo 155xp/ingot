@@ -1,0 +1,7 @@
+# Generated / large: re-create with fetch_mods.py and run.sh prepare
+mods-cache/
+worlds/
+results/raw/
+__pycache__/
+# energy sampler binary, built by run.sh from power/ingot-energy.c
+power/build/

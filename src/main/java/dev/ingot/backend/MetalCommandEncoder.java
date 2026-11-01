@@ -66,6 +66,27 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	private long blitEncoder;
 	private long renderEncoder;
 	private @Nullable MetalRenderPass renderPass;
+	/**
+	 * Render encoder of the last submitted pass, kept open (see createRenderPass): the next pass continues in it when
+	 * it renders to the same attachments, so a tile-based GPU never stores and reloads them in between. Ended like the
+	 * blit encoder, by endBlit(), before anything else is encoded.
+	 */
+	private long parkedEncoder;
+	private final @Nullable MetalTexture[] parkedColors = new MetalTexture[Mtl.MAX_COLOR_TARGETS];
+	private final int[] parkedColorLevels = new int[Mtl.MAX_COLOR_TARGETS];
+	private @Nullable MetalTexture parkedDepth;
+	private int parkedDepthLevel;
+	private int parkedColorCount;
+	/** -Dingot.passMerging=false always begins a new encoder (for A/B comparisons). */
+	private static final boolean PASS_MERGING = !"false".equals(System.getProperty("ingot.passMerging"));
+	/** -Dingot.debugPassStats=true logs passes and merges per frame every 120 frames. */
+	private static final boolean PASS_STATS = Boolean.getBoolean("ingot.debugPassStats");
+	private long statPasses;
+	private long statMerged;
+	private long statDepthClears;
+	private long statFrames;
+	/** The current pass continued a parked encoder and opened a debug group named after itself. */
+	private boolean renderPassLabelGroup;
 	/** Textures with a recorded but not yet encoded whole-texture clear. */
 	private MetalTexture[] pendingClears = new MetalTexture[8];
 	private int pendingClearCount;
@@ -116,6 +137,14 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		this.endBlit();
 		long serial = this.device.currentSerial();
 		this.commit();
+		if (PASS_STATS && ++this.statFrames % 120 == 0) {
+			dev.ingot.Ingot.LOGGER.info("Ingot: {} render passes per frame, {} continued in the previous pass's encoder ({} with an in-pass depth clear)",
+				String.format(java.util.Locale.ROOT, "%.1f", this.statPasses / 120.0), String.format(java.util.Locale.ROOT, "%.1f", this.statMerged / 120.0),
+				String.format(java.util.Locale.ROOT, "%.1f", this.statDepthClears / 120.0));
+			this.statPasses = 0;
+			this.statMerged = 0;
+			this.statDepthClears = 0;
+		}
 		long now = System.nanoTime();
 		this.transientMemory.endFrame(serial, now);
 		// Two frames in flight: the CPU records frame N+1 while the GPU runs frame N, never N-1.
@@ -159,6 +188,16 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		// Load-action clears cover whole attachments, so they are only usable when the render area does too.
 		boolean fullArea = area.x() == 0 && area.y() == 0 && area.width() == width && area.height() == height;
 
+		if (PASS_STATS) {
+			this.statPasses++;
+		}
+		boolean merge = this.parkedEncoder != 0L && PASS_MERGING && this.continuesParkedPass(descriptor, colorCount, fullArea);
+		if (PASS_STATS && this.statFrames == 300) {
+			this.tracePass(descriptor, colorCount, merge);
+		}
+		if (merge) {
+			return this.continueParkedPass(descriptor, width, height);
+		}
 		this.endBlit();
 		long buffer = this.commandBuffer();
 		this.flushPendingClears(fullArea ? descriptor : null);
@@ -220,9 +259,174 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		this.pendingClearCount = 0;
 
 		this.renderEncoder = encoderHandle;
+		this.rememberAttachments(descriptor, colorCount);
 		MetalRenderPass pass = new MetalRenderPass(this.device, this, encoderHandle, descriptor, depthPixelFormat, stencilPixelFormat,
 			colorAttachmentMask, width, height);
 		this.renderPass = pass;
+		return pass;
+	}
+
+	/** -Dingot.debugPassStats: one line per pass of one frame, with what kept it from continuing the parked encoder. */
+	private void tracePass(RenderPassDescriptor descriptor, int colorCount, boolean merge) {
+		StringBuilder line = new StringBuilder("Ingot pass trace: ").append(descriptor.label().get()).append(" [");
+		for (int i = 0; i < colorCount; i++) {
+			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = descriptor.colorAttachments().get(i);
+			line.append(attachment == null ? "-" : attachment.textureView().texture().getLabel()
+				+ (attachment.clearValue().isPresent() ? "(clear)" : "")).append(' ');
+		}
+		RenderPassDescriptor.Attachment<OptionalDouble> depth = descriptor.depthAttachment();
+		line.append("depth=").append(depth == null ? "-" : depth.textureView().texture().getLabel() + (depth.clearValue().isPresent() ? "(clear)" : ""));
+		line.append("] ");
+		if (merge) {
+			line.append("CONTINUED");
+		} else if (this.parkedEncoder == 0L) {
+			line.append("new: nothing parked (something else was encoded since the last pass)");
+		} else {
+			line.append("new: parked pass had [");
+			for (int i = 0; i < this.parkedColorCount; i++) {
+				line.append(this.parkedColors[i] == null ? "-" : this.parkedColors[i].getLabel()).append(' ');
+			}
+			line.append("depth=").append(this.parkedDepth == null ? "-" : this.parkedDepth.getLabel()).append("], pending clears ").append(this.pendingClearCount);
+		}
+		dev.ingot.Ingot.LOGGER.info(line.toString());
+	}
+
+	private void rememberAttachments(RenderPassDescriptor descriptor, int colorCount) {
+		List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colors = descriptor.colorAttachments();
+		Arrays.fill(this.parkedColors, null);
+		for (int i = 0; i < colorCount; i++) {
+			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colors.get(i);
+			if (attachment != null) {
+				MetalTextureView view = (MetalTextureView) attachment.textureView();
+				this.parkedColors[i] = view.metalTexture();
+				this.parkedColorLevels[i] = view.baseMipLevel();
+			}
+		}
+		this.parkedColorCount = colorCount;
+		RenderPassDescriptor.Attachment<OptionalDouble> depth = descriptor.depthAttachment();
+		if (depth != null) {
+			MetalTextureView view = (MetalTextureView) depth.textureView();
+			this.parkedDepth = view.metalTexture();
+			this.parkedDepthLevel = view.baseMipLevel();
+		} else {
+			this.parkedDepth = null;
+		}
+	}
+
+	/**
+	 * True when the pass can continue in the parked encoder: exactly the same attachments (texture and mip level per
+	 * slot), no color clear (a clear is a load action, which only a new encoder has), and no clear pending on any other
+	 * texture (flushing one would encode a pass in between). A depth clear of the parked depth attachment, pending or
+	 * requested by the descriptor for the whole render area, is drawn inside the encoder (ingot_render_clear_depth) when the
+	 * pass has at most one color attachment. Nothing else can have been encoded since the parked pass: every other command ends the parked
+	 * encoder first.
+	 */
+	private boolean continuesParkedPass(RenderPassDescriptor descriptor, int colorCount, boolean fullArea) {
+		if (colorCount != this.parkedColorCount) {
+			return false;
+		}
+		for (int i = 0; i < this.pendingClearCount; i++) {
+			MetalTexture texture = this.pendingClears[i];
+			if (texture != this.parkedDepth || this.parkedDepthLevel != 0 || texture.getMipLevels() != 1 || !this.clearsDepthInPass()) {
+				return false;
+			}
+		}
+		List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colors = descriptor.colorAttachments();
+		for (int i = 0; i < colorCount; i++) {
+			RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colors.get(i);
+			if (attachment == null) {
+				if (this.parkedColors[i] != null) {
+					return false;
+				}
+				continue;
+			}
+			MetalTextureView view = (MetalTextureView) attachment.textureView();
+			if (attachment.clearValue().isPresent() || view.metalTexture() != this.parkedColors[i] || view.baseMipLevel() != this.parkedColorLevels[i]) {
+				return false;
+			}
+		}
+		RenderPassDescriptor.Attachment<OptionalDouble> depth = descriptor.depthAttachment();
+		if (depth == null) {
+			return this.parkedDepth == null;
+		}
+		MetalTextureView view = (MetalTextureView) depth.textureView();
+		// The in-pass clear covers the whole attachment, like a load action, so a clear of a smaller render area cannot use it.
+		return (depth.clearValue().isEmpty() || fullArea && this.clearsDepthInPass()) && view.metalTexture() == this.parkedDepth
+			&& view.baseMipLevel() == this.parkedDepthLevel;
+	}
+
+	/** In-pass depth clears need a depth-only format (no stencil to keep) and at most color attachment 0. */
+	private boolean clearsDepthInPass() {
+		MetalTexture depth = this.parkedDepth;
+		if (depth == null || depth.getFormat().hasStencilAspect()) {
+			return false;
+		}
+		for (int i = 1; i < this.parkedColorCount; i++) {
+			if (this.parkedColors[i] != null) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Continues in the parked encoder. A new MetalRenderPass assumes a fresh encoder's state, so everything it caches
+	 * that the previous pass may have changed goes back to the defaults: depth-stencil state, depth bias, cull and fill
+	 * mode, winding and scissor. Its constructor sets the viewport; bindings are re-sent because its caches start empty.
+	 */
+	private RenderPassBackend continueParkedPass(RenderPassDescriptor descriptor, int width, int height) {
+		long encoderHandle = this.parkedEncoder;
+		this.parkedEncoder = 0L;
+		if (PASS_STATS) {
+			this.statMerged++;
+		}
+		MetalTexture depth = this.parkedDepth;
+		int depthPixelFormat = 0;
+		int stencilPixelFormat = 0;
+		if (depth != null) {
+			GpuFormat format = depth.getFormat();
+			depthPixelFormat = format.hasDepthAspect() ? depth.pixelFormat() : 0;
+			stencilPixelFormat = format.hasStencilAspect() ? depth.pixelFormat() : 0;
+			// A depth clear of this attachment: requested by the descriptor (it wins, as a load action would), else pending.
+			RenderPassDescriptor.Attachment<OptionalDouble> attachment = descriptor.depthAttachment();
+			boolean clear = depth.clearPending;
+			float clearDepth = depth.clearDepth;
+			if (attachment != null && attachment.clearValue().isPresent()) {
+				clear = true;
+				clearDepth = (float) attachment.clearValue().getAsDouble();
+			}
+			if (depth.clearPending) {
+				this.dropPendingClear(depth);
+			}
+			if (clear) {
+				MetalTexture color = this.parkedColors[0];
+				Mtl.renderClearDepth(this.deviceHandle, encoderHandle, color != null ? color.pixelFormat() : 0, depthPixelFormat, width, height,
+					clearDepth);
+				if (PASS_STATS) {
+					this.statDepthClears++;
+				}
+			}
+			Mtl.renderSetDepthStencil(encoderHandle, this.device.depthStencilState(null));
+			Mtl.renderSetDepthBias(encoderHandle, 0.0F, 0.0F, 0.0F);
+		}
+		Mtl.renderSetRaster(encoderHandle, MetalFormats.CULL_NONE, MetalFormats.WINDING_CLOCKWISE, MetalFormats.FILL_FILL);
+		Mtl.renderSetScissor(encoderHandle, 0, 0, width, height);
+		int colorAttachmentMask = 0;
+		for (int i = 0; i < this.parkedColorCount; i++) {
+			if (this.parkedColors[i] != null) {
+				colorAttachmentMask |= 1 << i;
+			}
+		}
+		this.renderEncoder = encoderHandle;
+		if (this.device.debugLabels()) {
+			try (org.lwjgl.system.MemoryStack stack = org.lwjgl.system.MemoryStack.stackPush()) {
+				Mtl.renderPushDebugGroup(encoderHandle, MemoryUtil.memAddress(stack.UTF8(descriptor.label().get())));
+			}
+		}
+		MetalRenderPass pass = new MetalRenderPass(this.device, this, encoderHandle, descriptor, depthPixelFormat, stencilPixelFormat,
+			colorAttachmentMask, width, height);
+		this.renderPass = pass;
+		this.renderPassLabelGroup = this.device.debugLabels();
 		return pass;
 	}
 
@@ -285,7 +489,12 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 			throw new IllegalStateException("Cannot submit a render pass if one hasn't been started");
 		}
 		pass.finish();
-		Mtl.renderEnd(this.renderEncoder);
+		if (this.renderPassLabelGroup) {
+			Mtl.renderPopDebugGroup(this.renderEncoder);
+			this.renderPassLabelGroup = false;
+		}
+		// Kept open for the next pass (createRenderPass); endBlit() ends it before anything else is encoded.
+		this.parkedEncoder = this.renderEncoder;
 		this.renderEncoder = 0L;
 		this.renderPass = null;
 	}
@@ -486,6 +695,7 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 	 * whichever command buffer that is in.
 	 */
 	private void commit() {
+		this.endBlit();
 		long buffer = this.commandBuffer();
 		this.device.flushManagedWrites();
 		Mtl.cmdCommit(this.deviceHandle, buffer, this.device.currentSerial());
@@ -495,6 +705,7 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 
 	private long blitEncoder() {
 		if (this.blitEncoder == 0L) {
+			this.endParkedPass();
 			this.blitEncoder = Mtl.blitBegin(this.commandBuffer());
 			if (this.blitEncoder == 0L) {
 				throw new IllegalStateException("Could not begin a Metal blit encoder: " + MetalDevice.lastError());
@@ -503,10 +714,30 @@ public final class MetalCommandEncoder implements CommandEncoderBackend {
 		return this.blitEncoder;
 	}
 
+	/** Ends the blit encoder and the parked render encoder: called before anything else is encoded or committed. */
 	private void endBlit() {
 		if (this.blitEncoder != 0L) {
 			Mtl.blitEnd(this.blitEncoder);
 			this.blitEncoder = 0L;
+		}
+		this.endParkedPass();
+	}
+
+	private void endParkedPass() {
+		if (this.parkedEncoder != 0L) {
+			if (PASS_STATS && this.statFrames == 300) {
+				// Which command ended the parked pass: the first caller outside this class.
+				String caller = StackWalker.getInstance().walk(frames -> frames
+					.filter(f -> !f.getClassName().equals(MetalCommandEncoder.class.getName()))
+					.limit(3).map(f -> f.getClassName().substring(f.getClassName().lastIndexOf('.') + 1) + "." + f.getMethodName())
+					.reduce((a, b) -> a + " < " + b).orElse("?"));
+				String inside = StackWalker.getInstance().walk(frames -> frames.skip(1)
+					.filter(f -> f.getClassName().equals(MetalCommandEncoder.class.getName())).limit(2)
+					.map(StackWalker.StackFrame::getMethodName).reduce((a, b) -> a + " < " + b).orElse("?"));
+				dev.ingot.Ingot.LOGGER.info("Ingot pass trace: parked pass ended by {} ({})", inside, caller);
+			}
+			Mtl.renderEnd(this.parkedEncoder);
+			this.parkedEncoder = 0L;
 		}
 	}
 

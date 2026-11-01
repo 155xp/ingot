@@ -118,6 +118,18 @@ loom {
 				environmentVariable "MTL_DEBUG_LAYER", "1"
 				environmentVariable "MTL_DEBUG_LAYER_ERROR_MODE", "assert"
 			}
+			// -Pingot.passMerging, debugPassStats, shaderMath and multiDrawIndirect pass through to Ingot (A/B checks).
+			["passMerging", "debugPassStats", "shaderMath", "multiDrawIndirect"].each { key ->
+				def value = project.findProperty("ingot.${key}")
+				if (value != null) {
+					vmArg "-Dingot.${key}=${value}"
+				}
+			}
+			// -Pingot.test.only=PowerModeTest runs only the named game test classes (comma-separated).
+			def testOnly = project.findProperty("ingot.test.only")
+			if (testOnly != null) {
+				vmArg "-Dingot.test.only=${testOnly}"
+			}
 			def testApi = project.findProperty("ingot.test.api")
 			if (testApi != null) {
 				vmArg "-Dingot.test.api=${testApi}"
@@ -176,15 +188,19 @@ loom {
 			runDir benchProp("runDir", "run/bench/manual")
 			programArgs "--width", benchProp("width", "1280"), "--height", benchProp("height", "720"),
 				"--username", "IngotBench", "--uuid", "1b3e5a7c-0000-4000-8000-000000be0c11"
-			// Identical for every configuration: the vanilla launcher's default JVM flags for 26.3 (-Xmx4G, ZGC).
-			vmArgs "-Xms2G", "-Xmx4G", "-XX:+UseCompactObjectHeaders", "-XX:+AlwaysPreTouch",
-				"-XX:+UseStringDeduplication", "-XX:+UseZGC"
+			// The vanilla launcher's default JVM flags for 26.3 (-Xmx4G, ZGC), identical for every configuration unless
+			// the run's bench.properties carries jvm.args (a configuration's "jvmArgs" in bench/configs.json), which
+			// replaces them; every other entry becomes -D<key>=<value>.
+			def jvmDefaults = ["-Xms2G", "-Xmx4G", "-XX:+UseCompactObjectHeaders", "-XX:+AlwaysPreTouch",
+				"-XX:+UseStringDeduplication", "-XX:+UseZGC"]
+			def props = new Properties()
 			def sysprops = project.findProperty("bench.sysprops")
 			if (sysprops != null) {
-				def props = new Properties()
 				file(sysprops.toString()).withInputStream { props.load(it) }
-				props.stringPropertyNames().sort().each { vmArg "-D${it}=${props.getProperty(it)}" }
 			}
+			def jvmArgs = props.getProperty("jvm.args")
+			vmArgs(jvmArgs != null ? jvmArgs.trim().split(/\s+/).toList() : jvmDefaults)
+			props.stringPropertyNames().sort().findAll { it != "jvm.args" }.each { vmArg "-D${it}=${props.getProperty(it)}" }
 		}
 	}
 }

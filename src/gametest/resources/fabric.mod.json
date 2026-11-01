@@ -6,7 +6,8 @@
 	"environment": "client",
 	"entrypoints": {
 		"fabric-client-gametest": [
-			"dev.ingot.gametest.VisualTourTest"
+			"dev.ingot.gametest.VisualTourTest",
+			"dev.ingot.gametest.PowerModeTest"
 		],
 		"preLaunch": [
 			"dev.ingot.gametest.TourPreLaunch"

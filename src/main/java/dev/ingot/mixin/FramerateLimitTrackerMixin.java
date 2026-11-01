@@ -7,8 +7,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Occlusion throttle (a fully covered window gets the minimized-window frame rate) and battery saver (an Unlimited
- * limit is capped to the refresh rate on battery). Both change only the value read each frame, never the saved
+ * Occlusion throttle (a fully covered window gets the minimized-window frame rate) and the power mode's frame cap
+ * (Battery mode: the display refresh rate by default). Both change only the value read each frame, never the saved
  * option. Optional: without them the vanilla limits apply.
  */
 @Mixin(FramerateLimitTracker.class)
@@ -21,7 +21,7 @@ abstract class FramerateLimitTrackerMixin {
 	}
 
 	@ModifyReturnValue(method = "getFramerateLimit", at = @At("RETURN"), require = 0)
-	private int ingot$batterySaver(int framerateLimit) {
+	private int ingot$powerModeCap(int framerateLimit) {
 		return PowerPolicy.limitFramerate(framerateLimit);
 	}
 }

@@ -1,0 +1,93 @@
+{
+	"_comment": "Benchmark configurations. mods: mod sets from mods.json/mods.lock.json copied into the run's mods/ folder. ingot: value of -Dingot.enabled (Ingot is on the classpath in every configuration). expectBackend: case-insensitive substring the GPU backend name must contain, otherwise the result is marked invalid (catches Ingot silently falling back to OpenGL). rejectBackend: substring it must not contain (catches Ingot running where it should be disabled). options: options.txt lines that override bench/options.base.txt. ingotProps: Ingot settings (config/ingot.properties keys) on top of the defaults in benchlib.ingot_props (Performance mode, full resolution).",
+	"vanilla": {
+		"description": "Fabric Loader + bench harness only; Ingot present but disabled",
+		"ingot": false,
+		"mods": [],
+		"rejectBackend": "metal"
+	},
+	"mainstream": {
+		"description": "Performance core of Fabulously Optimized 26.3 (Sodium, Lithium, FerriteCore, ImmediatelyFast, EntityCulling, MoreCulling, ModernFix + required deps); Ingot disabled",
+		"ingot": false,
+		"mods": [
+			"mainstream"
+		],
+		"rejectBackend": "metal"
+	},
+	"ingot": {
+		"description": "Ingot (Metal backend) enabled, no other mods",
+		"ingot": true,
+		"mods": [],
+		"expectBackend": "metal"
+	},
+	"ingot-plus": {
+		"description": "Ingot enabled + the mainstream set",
+		"ingot": true,
+		"mods": [
+			"mainstream"
+		],
+		"expectBackend": "metal"
+	},
+	"ingot-battery": {
+		"description": "Ingot in Battery mode: frame cap at the display refresh rate, background workers on the efficiency cores, full resolution",
+		"ingot": true,
+		"mods": [],
+		"expectBackend": "metal",
+		"ingotProps": {
+			"powerMode": "battery",
+			"batteryFps": "0",
+			"batteryEfficiencyCores": "true",
+			"batteryResolution": "full"
+		}
+	},
+	"ingot-battery-half": {
+		"description": "Ingot in Battery mode at half resolution (one pixel per point)",
+		"ingot": true,
+		"mods": [],
+		"expectBackend": "metal",
+		"ingotProps": {
+			"powerMode": "battery",
+			"batteryFps": "0",
+			"batteryEfficiencyCores": "true",
+			"batteryResolution": "half"
+		}
+	},
+	"ingot-half": {
+		"description": "Ingot in Performance mode at half resolution",
+		"ingot": true,
+		"mods": [],
+		"expectBackend": "metal",
+		"ingotProps": {
+			"performanceResolution": "half"
+		}
+	},
+	"ingot-nomerge": {
+		"description": "Ingot (Performance mode) with render pass merging switched off, for the A/B",
+		"ingot": true,
+		"mods": [],
+		"expectBackend": "metal",
+		"ingotProps": {
+			"passMerging": "false"
+		}
+	},
+	"ingot-g1": {
+		"description": "Ingot (Performance mode) on G1 instead of ZGC, no pre-touched heap",
+		"ingot": true,
+		"mods": [],
+		"expectBackend": "metal",
+		"jvmArgs": "-Xms1G -Xmx4G -XX:+UseCompactObjectHeaders -XX:+UseStringDeduplication -XX:+UseG1GC -XX:MaxGCPauseMillis=40"
+	},
+	"ingot-profile-battery": {
+		"description": "What the Modrinth profile runs on battery: Ingot Battery mode (full resolution) with the profile's G1 JVM flags",
+		"ingot": true,
+		"mods": [],
+		"expectBackend": "metal",
+		"ingotProps": {
+			"powerMode": "battery",
+			"batteryFps": "0",
+			"batteryEfficiencyCores": "true",
+			"batteryResolution": "full"
+		},
+		"jvmArgs": "-Xmx4G -XX:+UseG1GC -XX:MaxGCPauseMillis=40 -XX:+UseCompactObjectHeaders -XX:+UseStringDeduplication"
+	}
+}

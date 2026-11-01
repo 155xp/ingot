@@ -32,6 +32,7 @@ typedef struct IngotSerialTimes {
 typedef NS_ENUM(uint32_t, IngotUtilKind) {
     IngotUtilKindClear = 1,   // ingot_util_clear_region; the attached formats pick the fragment function
     IngotUtilKindBlit = 2,    // ingot_surface_blit
+    IngotUtilKindClearDepthInPass = 3, // ingot_render_clear_depth: writes depth only (the color attachment is masked)
 };
 
 @interface IngotDevice : NSObject {
@@ -81,6 +82,12 @@ id<MTLRenderPipelineState> ingot_util_pipeline(IngotDevice *device, IngotUtilKin
     IngotDevice *device;
     CAMetalLayer *layer;
     id<MTLRenderPipelineState> blit_pipeline;
+    // Background drawable acquisition for frame rates above the display's (ingot_surface_try_drawable).
+    dispatch_queue_t acquire_queue;
+    os_unfair_lock ready_lock;
+    id<CAMetalDrawable> ready;   // ready_lock: a drawable acquired in the background, or nil
+    bool acquiring;              // ready_lock: an acquire is queued or running
+    uint64_t generation;         // ready_lock: bumped by configure; drawables acquired before it are dropped
 }
 @end
 

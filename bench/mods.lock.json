@@ -1,0 +1,210 @@
+{
+  "generatedAt": "2026-10-04T17:04:27+00:00",
+  "gameVersion": "26.3",
+  "loader": "fabric",
+  "notes": [],
+  "sets": {
+    "mainstream": [
+      "sodium",
+      "lithium",
+      "ferrite-core",
+      "immediatelyfast",
+      "entityculling",
+      "moreculling",
+      "modernfix-mvus",
+      "fabric-api",
+      "cloth-config"
+    ]
+  },
+  "mods": {
+    "cloth-config": {
+      "projectId": "9s6osm5g",
+      "slug": "cloth-config",
+      "title": "Cloth Config API",
+      "versionId": "fg2uyxOW",
+      "versionNumber": "26.3.159+fabric",
+      "versionType": "release",
+      "datePublished": "2026-09-23T07:00:48.136714Z",
+      "gameVersions": [
+        "26.3"
+      ],
+      "filename": "cloth-config-fabric-26.3.159.jar",
+      "url": "https://cdn.modrinth.com/data/9s6osm5g/versions/fg2uyxOW/cloth-config-fabric-26.3.159.jar",
+      "size": 1135009,
+      "sha1": "9a5cce069380a2047250831dcb19f4ef1b15872d",
+      "sha512": "8924e19d41845096724fa10f3717bc51964a0edbbbcad0ff1e6c6187a398b08f356e49579a657c2dc44a7f92e3850771f3ca70bf8c1f654de60425163b91dbb1",
+      "requiredBy": [
+        "moreculling"
+      ],
+      "why": "required dependency of moreculling",
+      "incompatible": []
+    },
+    "entityculling": {
+      "projectId": "NNAgCjsB",
+      "slug": "entityculling",
+      "title": "Entity Culling",
+      "versionId": "F4loCvYt",
+      "versionNumber": "1.11.2",
+      "versionType": "release",
+      "datePublished": "2026-09-21T19:47:07.296563Z",
+      "gameVersions": [
+        "26.3"
+      ],
+      "filename": "entityculling-fabric-1.11.2-mc26.3.jar",
+      "url": "https://cdn.modrinth.com/data/NNAgCjsB/versions/F4loCvYt/entityculling-fabric-1.11.2-mc26.3.jar",
+      "size": 1508273,
+      "sha1": "f2196e803fe77cfbb62c4a2acb64803d98b4f61c",
+      "sha512": "c5d8947cb022f8baed4bf17e38ca598c56b8049871e7e47fb462bcecc9bc01e7eb75290494199fcb1aa73f5e37f93a296211ba78c9dd2a5bff30d5eed497ebcc",
+      "requiredBy": [],
+      "why": "skips occluded entities and block entities",
+      "incompatible": []
+    },
+    "fabric-api": {
+      "projectId": "P7dR8mSH",
+      "slug": "fabric-api",
+      "title": "Fabric API",
+      "versionId": "bNnaTiuM",
+      "versionNumber": "0.161.0+26.3",
+      "versionType": "release",
+      "datePublished": "2026-09-18T17:36:49.548962Z",
+      "gameVersions": [
+        "26.3"
+      ],
+      "filename": "fabric-api-0.161.0+26.3.jar",
+      "url": "https://cdn.modrinth.com/data/P7dR8mSH/versions/bNnaTiuM/fabric-api-0.161.0%2B26.3.jar",
+      "size": 2620967,
+      "sha1": "53f9ee02c3702734d90520aa8c9719bf0e1c8d4f",
+      "sha512": "ed6b2586d6fde11fde8472f5a527c51e99b67026e46f94d4bfd85e7e28ce5ee299173ee16ad576ceb51f39f98d30a811086a6deb1a86a524859cc16e12da109d",
+      "requiredBy": [
+        "entityculling",
+        "modernfix-mvus"
+      ],
+      "why": "required dependency of entityculling",
+      "incompatible": []
+    },
+    "ferrite-core": {
+      "projectId": "uXXizFIs",
+      "slug": "ferrite-core",
+      "title": "FerriteCore",
+      "versionId": "d5ddUdiB",
+      "versionNumber": "9.0.0-fabric",
+      "versionType": "release",
+      "datePublished": "2026-03-24T18:31:50.491773Z",
+      "gameVersions": [
+        "26.1",
+        "26.1.1",
+        "26.1.2",
+        "26.2",
+        "26.3"
+      ],
+      "filename": "ferritecore-9.0.0-fabric.jar",
+      "url": "https://cdn.modrinth.com/data/uXXizFIs/versions/d5ddUdiB/ferritecore-9.0.0-fabric.jar",
+      "size": 72677,
+      "sha1": "eac76ff0f3753422c61b2c44487d0d195d88d4bc",
+      "sha512": "d81fa97e11784c19d42f89c2f433831d007603dd7193cee45fa177e4a6a9c52b384b198586e04a0f7f63cd996fed713322578bde9a8db57e1188854ae5cbe584",
+      "requiredBy": [],
+      "why": "memory usage",
+      "incompatible": []
+    },
+    "immediatelyfast": {
+      "projectId": "5ZwdcRci",
+      "slug": "immediatelyfast",
+      "title": "ImmediatelyFast",
+      "versionId": "3MP9UR23",
+      "versionNumber": "1.17.1+26.3-fabric",
+      "versionType": "release",
+      "datePublished": "2026-09-17T16:51:35.440119Z",
+      "gameVersions": [
+        "26.3"
+      ],
+      "filename": "ImmediatelyFast-Fabric-1.17.1+26.3.jar",
+      "url": "https://cdn.modrinth.com/data/5ZwdcRci/versions/3MP9UR23/ImmediatelyFast-Fabric-1.17.1%2B26.3.jar",
+      "size": 99586,
+      "sha1": "f565bbeb201f2305e81761429d3f1f47e1c3a321",
+      "sha512": "8e139589fd995bce3d485a34d92a07243964212f7ed2e4fc2f6de5b9a74d0f59b03252e7ce40c64e006cf3e21bed5de27b830d33ef048b286e041f6178ad8428",
+      "requiredBy": [],
+      "why": "immediate-mode rendering (GUI, text, HUD) batching",
+      "incompatible": []
+    },
+    "lithium": {
+      "projectId": "gvQqBUqZ",
+      "slug": "lithium",
+      "title": "Lithium",
+      "versionId": "xS0Q8LSi",
+      "versionNumber": "mc26.3-0.26.2-fabric",
+      "versionType": "release",
+      "datePublished": "2026-09-28T03:43:35.593224Z",
+      "gameVersions": [
+        "26.3"
+      ],
+      "filename": "lithium-fabric-0.26.2+mc26.3.jar",
+      "url": "https://cdn.modrinth.com/data/gvQqBUqZ/versions/xS0Q8LSi/lithium-fabric-0.26.2%2Bmc26.3.jar",
+      "size": 914543,
+      "sha1": "dd5a4ec2c68d7601d8bce9076f789c55a5f8bef3",
+      "sha512": "4d7fee66132eedc71feab9390b92c95d7058edbdad0fecfac1d836a2950b97a7ca463afbede61c7ef361ce65e1f927ab9e89dde5bf2e0e0ce486afb5c5dbee40",
+      "requiredBy": [],
+      "why": "game logic / server tick optimizations",
+      "incompatible": []
+    },
+    "modernfix-mvus": {
+      "projectId": "TjSm1wrD",
+      "slug": "modernfix-mvus",
+      "title": "ModernFix-mVUS",
+      "versionId": "pa9cAfYg",
+      "versionNumber": "5.27.20-build.2",
+      "versionType": "release",
+      "datePublished": "2026-09-25T17:18:49.851183Z",
+      "gameVersions": [
+        "26.3"
+      ],
+      "filename": "modernfix-5.27.20-build.2.jar",
+      "url": "https://cdn.modrinth.com/data/TjSm1wrD/versions/pa9cAfYg/modernfix-5.27.20-build.2.jar",
+      "size": 1168784,
+      "sha1": "b63337e801fbf2cb420a049d69220c56e083f514",
+      "sha512": "b586434056107aac4ef86e9351d66170dac65a45a1e5f8bd48fb931b3012ab2431b16476eb9c256773339e2b4c60f6f3e90a4709180f700b2aea59ff607f4243",
+      "requiredBy": [],
+      "why": "ModernFix; the 26.3 build Fabulously Optimized ships is the mVUS fork, the original 'modernfix' project has no 26.3 release",
+      "incompatible": []
+    },
+    "moreculling": {
+      "projectId": "51shyZVL",
+      "slug": "moreculling",
+      "title": "More Culling",
+      "versionId": "t7vAlfgO",
+      "versionNumber": "1.9.0",
+      "versionType": "release",
+      "datePublished": "2026-10-03T09:14:52.187590Z",
+      "gameVersions": [
+        "26.3"
+      ],
+      "filename": "moreculling-fabric-26.3-1.9.0.jar",
+      "url": "https://cdn.modrinth.com/data/51shyZVL/versions/t7vAlfgO/moreculling-fabric-26.3-1.9.0.jar",
+      "size": 294320,
+      "sha1": "7308b0b0b6fffb0e076cabf97db7fc889d9ada68",
+      "sha512": "b1975ef43606a3baa1c93a040fbef96abfbf46ae6a1e364c60effd03a42568f945ede0bde329241e87adc6a9c2769dd1d13ad286869c689018035eff677442b2",
+      "requiredBy": [],
+      "why": "extra block/face culling",
+      "incompatible": []
+    },
+    "sodium": {
+      "projectId": "AANobbMI",
+      "slug": "sodium",
+      "title": "Sodium",
+      "versionId": "v4PSXean",
+      "versionNumber": "mc26.3-0.9.3-alpha.1-fabric",
+      "versionType": "alpha",
+      "datePublished": "2026-09-20T21:27:07.494280Z",
+      "gameVersions": [
+        "26.3"
+      ],
+      "filename": "sodium-fabric-0.9.3-alpha.1+mc26.3.jar",
+      "url": "https://cdn.modrinth.com/data/AANobbMI/versions/v4PSXean/sodium-fabric-0.9.3-alpha.1%2Bmc26.3.jar",
+      "size": 1911459,
+      "sha1": "5d88caf6f3e182cd39d0fb0d2e7200c5e613f287",
+      "sha512": "8aa044fea0185855e2ca0971b4e3b3bc1ee4c616e3a7d6ca4d4b979fbb99340678c0bf6acd16be04095bc885b75b4caf95401486e91b65239385e98fab6d3542",
+      "requiredBy": [],
+      "why": "renderer rewrite (latest 26.3 build, including alphas)",
+      "incompatible": []
+    }
+  }
+}
