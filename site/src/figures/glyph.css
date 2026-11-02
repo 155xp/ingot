@@ -21,10 +21,6 @@
   font-size: 12px;
 }
 
-.gk-body {
-  overflow-x: auto;
-}
-
 /* Departure Mono draws on an 11px grid: 16.5px puts every block on whole device pixels on a Retina display, so
    columns have no seams; line height 1 makes a column's rows one solid bar. */
 .gk-figure {
